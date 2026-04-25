@@ -1,59 +1,46 @@
-# Live Stream Translation App - Research & Tech Stack Recommendation
+# Live Stream Translation App - Finalized Tech Stack & Architecture
 
-To build an application that provides live translated captions for foreign language live streams, we need to address four main technical challenges: **Audio Capture**, **Speech-to-Text (STT)**, **Translation**, and **Caption Overlay (UI)**.
+This document outlines the finalized technical architecture for the offline live stream translation application.
 
-Since the goal is Android-focused but ideally cross-platform, we need to consider how deeply integrated the app needs to be with the operating system.
+## 1. Architectural Approach: System-Wide Overlay (Android Native)
 
-## 1. Architectural Approaches
+We have chosen the **System-Wide Overlay** approach. The application will run entirely in the background and overlay translated captions on top of whichever app the user is currently running (e.g., Twitch, YouTube app).
 
-There are two primary ways to approach this app:
-
-### Approach A: The "System-Wide Overlay" (Recommended for flexibility)
-The user opens their preferred app (e.g., Twitch, YouTube, Chrome), and your app runs in the background. It captures the device's internal audio, translates it, and displays a floating caption window over the screen.
-*   **Pros:** Works with almost any streaming app. User doesn't have to change their viewing habits.
-*   **Cons:** Requires specific permissions (Screen Recording/Audio Capture, Draw over other apps). Harder to make truly cross-platform (iOS restricts background audio capture and overlays heavily).
-
-### Approach B: The "All-in-One Player"
-Your app includes its own video player. The user pastes a stream URL (or uses an in-app browser) to watch the stream within your app.
-*   **Pros:** Easier to implement cross-platform (iOS, Android, Web). No need for complex system-wide permissions. Direct access to the audio stream.
-*   **Cons:** Users have to use your app instead of the native streaming apps. Extracting live stream URLs (HLS/DASH) from platforms like YouTube or Twitch can be technically challenging and against their Terms of Service.
+### Key Characteristics:
+*   **Platform:** Android Native (Kotlin)
+*   **Offline Capability:** The entire process runs locally on the device. It does not require an active internet connection once the language models are downloaded.
 
 ---
 
-## 2. Tech Stack Recommendations
+## 2. Tech Stack
 
-If you choose **Approach A (System-Wide Overlay)**, a Native Android approach is best because it relies heavily on Android-specific OS features. If you choose **Approach B (All-in-One Player)**, a cross-platform framework is ideal.
-
-### Framework:
-*   **Android Native (Kotlin + Jetpack Compose):** **Highly Recommended** if prioritizing Approach A. Implementing `AudioPlaybackCapture` (Android 10+) and `SYSTEM_ALERT_WINDOW` (floating overlay) is much easier and stable in native code.
-*   **Flutter (Dart):** Recommended if prioritizing Approach B (cross-platform). You can still do Approach A in Flutter, but you will need to write significant custom native code (Platform Channels) for the audio capture and floating window.
+### Framework & UI:
+*   **Android Native (Kotlin):** The app must be built natively to deeply integrate with Android's system permissions.
+*   **Jetpack Compose:** Used to build the application's configuration screens and the dynamic floating overlay UI.
+*   **WindowManager API (`TYPE_APPLICATION_OVERLAY`):** Essential for drawing the floating captions over other running applications.
 
 ### Audio Capture:
-*   **Android API:** `AudioPlaybackCapture` API (Available in Android 10+). This allows your app to capture audio from other apps. Note: Apps can opt-out of this, but most live streaming apps (like Twitch) allow it.
-*   **Requirements:** Requires a Foreground Service and user permission (MediaProjection / Screen Cast consent).
+*   **Android API:** `AudioPlaybackCapture` API (Introduced in Android 10).
+*   **Implementation:** A Foreground Service using `AudioRecord` configured with `AudioPlaybackCaptureConfiguration`. This allows the app to intercept internal device audio (system sound) rather than relying on the microphone.
+*   **Permissions Required:** `RECORD_AUDIO` and `FOREGROUND_SERVICE_MEDIA_PROJECTION` (requires explicit user consent via screen recording prompt).
 
 ### Speech-to-Text (STT) / Automatic Speech Recognition:
-Real-time STT is the most challenging part.
-*   **Cloud/API (Best Accuracy & Low Latency):** **Deepgram** or **AssemblyAI**. Deepgram is incredibly fast for streaming audio and supports many languages. Requires an internet connection and costs money per minute of processed audio.
-*   **On-Device (Free & Private):** **Vosk** or **Whisper.cpp**. These run entirely on the device. Vosk is lightweight and good for mobile. Whisper is more accurate but can be heavy on mobile processors, though `whisper.cpp` is heavily optimized. Both are completely free but require downloading language models.
+*   **Choice:** **On-Device (Vosk or Whisper.cpp)**
+*   **Reasoning:** Since we require offline functionality, a cloud-based API is not an option.
+    *   **Vosk:** Highly recommended for its lightweight nature on mobile devices and ease of integration in Android. It provides good real-time streaming recognition.
+    *   **Whisper.cpp:** An alternative if higher accuracy is needed, though it is more resource-intensive and battery draining.
 
 ### Translation:
-*   **On-Device (Recommended):** **Google ML Kit Translation API**. It's completely free, runs locally on the device (low latency), and supports over 50 languages. Models are downloaded dynamically (~30MB per language).
-*   **Cloud/API:** **DeepL API** or **Google Cloud Translation**. Much higher accuracy for complex sentences, but introduces network latency and cost.
-
-### User Interface (Overlay):
-*   **Android:** Use `WindowManager` with the `TYPE_APPLICATION_OVERLAY` flag to draw a floating window (like Facebook Messenger chat heads). You can build the overlay UI using Jetpack Compose.
+*   **Choice:** **Google ML Kit Translation API (On-Device)**
+*   **Reasoning:** Runs entirely locally, is completely free, and is heavily optimized by Google for Android devices. It dynamically manages language packs (~30MB per language), reducing the initial app size.
 
 ---
 
-## 3. Proposed Implementation Flow (Android Native - Overlay Approach)
+## 3. Implementation Flow
 
-1.  **Start Service:** User opens app, selects source language and target language.
-2.  **Permissions:** App requests `SYSTEM_ALERT_WINDOW` (Overlay) and `MediaProjection` (Audio Capture) permissions.
-3.  **Capture Audio:** A foreground service uses `AudioRecord` configured with `AudioPlaybackCaptureConfiguration` to record internal audio chunks.
-4.  **STT Processing:** Audio chunks are sent to the STT engine (e.g., local Vosk model or streaming to Deepgram WebSocket).
-5.  **Translation:** STT engine returns text in the source language. Text is passed to Google ML Kit Translation.
-6.  **Display:** Translated text is sent to the floating WindowManager overlay and displayed to the user in real-time.
-
-## 4. Next Steps
-Would you like to focus on the **System-Wide Overlay** approach (Android-centric) or the **All-in-One Player** approach (Cross-platform)? Let me know and we can start laying down the actual code and project structure.
+1.  **Initialization:** The user opens the app, selects the "Source Stream Language" (e.g., Japanese) and the "Target Caption Language" (e.g., English). The app downloads any necessary ML Kit or Vosk models if they aren't already on the device.
+2.  **Start Service:** The user taps "Start Captions".
+3.  **Permissions & Capture:** The app requests `SYSTEM_ALERT_WINDOW` (Overlay) and `MediaProjection` permissions. The foreground service begins recording internal audio chunks.
+4.  **STT Processing:** Audio chunks are streamed continuously into the local STT model (e.g., Vosk).
+5.  **Translation:** As the STT engine returns recognized text in the source language, the text is immediately fed into the Google ML Kit Translation client.
+6.  **Display:** The translated text is passed to the floating WindowManager overlay and updated on the screen in real-time, allowing the user to read along as they watch the stream in another app.

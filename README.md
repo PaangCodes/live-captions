@@ -44,3 +44,33 @@ We have chosen the **System-Wide Overlay** approach. The application will run en
 4.  **STT Processing:** The `AudioRecord` stream routes chunks through the active `SttEngine` implementation (Vosk or Whisper). If the user changes engines mid-stream, the app hot-swaps the underlying processor.
 5.  **Translation:** As the STT engine returns recognized text in the source language, the text is immediately fed into the Google ML Kit Translation client.
 6.  **Display:** The translated text is passed to the floating WindowManager overlay and updated on the screen in real-time, allowing the user to read along as they watch the stream in another app.
+
+---
+
+## 4. Infrastructure & Server
+
+**This application is 100% Serverless and Offline.**
+Because we utilize entirely on-device models for both Speech-to-Text and Translation, no audio data or transcription data is ever sent to a remote server.
+*   **Privacy:** Complete user privacy is maintained as data never leaves the device.
+*   **Cost:** $0 backend operational costs.
+*   **Network:** Functions offline once the necessary language models (Vosk/Whisper and ML Kit) are downloaded.
+
+---
+
+## 5. Testing Strategy
+
+Testing an application that relies on system overlays and internal audio capture requires a multi-layered approach:
+
+*   **Unit Tests (JUnit):** Used to verify the business logic, state management (Jetpack Compose ViewModels), and the `SttEngine` abstraction layer (ensuring smooth switching between Vosk and Whisper logic).
+*   **Instrumentation Tests (Espresso / UI Automator):** Run on emulators to verify UI components, navigation, and the initiation of Foreground Services.
+*   **Physical Device Testing:** Critical for this app. Emulators often struggle to accurately simulate `AudioPlaybackCapture` and complex `SYSTEM_ALERT_WINDOW` interactions across different Android OS versions. Manual testing on physical hardware is required to guarantee performance and battery efficiency.
+
+---
+
+## 6. Build Variants & Distribution
+
+The project utilizes Android's standard Gradle build system to manage different environments:
+
+*   **Debug (Development):** Unoptimized builds with full logging and debugging capabilities, deployed directly from Android Studio during active development.
+*   **Release (Preview / Beta):** Optimized and minified builds distributed via **Firebase App Distribution** or the **Google Play Internal Testing Track**. This allows beta testers to easily install the app and test the overlay on real devices.
+*   **Release (Production):** The signed, fully optimized build published to the public Google Play Store.

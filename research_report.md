@@ -25,10 +25,10 @@ We have chosen the **System-Wide Overlay** approach. The application will run en
 *   **Permissions Required:** `RECORD_AUDIO` and `FOREGROUND_SERVICE_MEDIA_PROJECTION` (requires explicit user consent via screen recording prompt).
 
 ### Speech-to-Text (STT) / Automatic Speech Recognition:
-*   **Choice:** **On-Device (Vosk or Whisper.cpp)**
-*   **Reasoning:** Since we require offline functionality, a cloud-based API is not an option.
-    *   **Vosk:** Highly recommended for its lightweight nature on mobile devices and ease of integration in Android. It provides good real-time streaming recognition.
-    *   **Whisper.cpp:** An alternative if higher accuracy is needed, though it is more resource-intensive and battery draining.
+*   **Choice:** **On-Device (Vosk AND Whisper.cpp)**
+*   **Reasoning & Flexibility:** Since we require offline functionality, a cloud-based API is not an option. However, users have different devices and preferences. We will implement an abstraction layer (e.g., `SttEngine` interface) that allows the user to switch between Vosk and Whisper in the app settings.
+    *   **Vosk (Default/Battery Saver):** Highly recommended for its lightweight nature on mobile devices. It provides very fast real-time streaming recognition, making it ideal for older devices or preserving battery.
+    *   **Whisper.cpp (High Accuracy):** A heavily optimized C++ port of OpenAI's Whisper. It provides superior transcription accuracy but is significantly more resource-intensive and battery draining. Allowing users to toggle this on for high-end devices provides the best of both worlds.
 
 ### Translation:
 *   **Choice:** **Google ML Kit Translation API (On-Device)**
@@ -38,9 +38,9 @@ We have chosen the **System-Wide Overlay** approach. The application will run en
 
 ## 3. Implementation Flow
 
-1.  **Initialization:** The user opens the app, selects the "Source Stream Language" (e.g., Japanese) and the "Target Caption Language" (e.g., English). The app downloads any necessary ML Kit or Vosk models if they aren't already on the device.
+1.  **Initialization:** The user opens the app, selects the "Source Stream Language" (e.g., Japanese), the "Target Caption Language" (e.g., English), and their preferred STT engine (Vosk or Whisper). The app downloads any necessary ML Kit or STT models if they aren't already on the device.
 2.  **Start Service:** The user taps "Start Captions".
 3.  **Permissions & Capture:** The app requests `SYSTEM_ALERT_WINDOW` (Overlay) and `MediaProjection` permissions. The foreground service begins recording internal audio chunks.
-4.  **STT Processing:** Audio chunks are streamed continuously into the local STT model (e.g., Vosk).
+4.  **STT Processing:** The `AudioRecord` stream routes chunks through the active `SttEngine` implementation (Vosk or Whisper). If the user changes engines mid-stream, the app hot-swaps the underlying processor.
 5.  **Translation:** As the STT engine returns recognized text in the source language, the text is immediately fed into the Google ML Kit Translation client.
 6.  **Display:** The translated text is passed to the floating WindowManager overlay and updated on the screen in real-time, allowing the user to read along as they watch the stream in another app.

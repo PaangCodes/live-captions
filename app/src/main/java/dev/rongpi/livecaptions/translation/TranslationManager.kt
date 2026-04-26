@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import android.util.Log
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -49,7 +50,8 @@ class TranslationManager(
 
                 _state.value = TranslationState.Ready
             } catch (e: Exception) {
-                _state.value = TranslationState.Error(e.message ?: "Failed to initialize translation model")
+                Log.e(TAG, "Exception during translation initialization", e)
+                _state.value = TranslationState.Error("Failed to initialize translation model")
             }
         }
     }
@@ -64,6 +66,7 @@ class TranslationManager(
                             _translatedText.emit(translated)
                         }
                     } catch (e: Exception) {
+                        Log.e(TAG, "Exception during translation", e)
                         // Handle or log translation error, don't crash stream
                     }
                 }
@@ -74,5 +77,9 @@ class TranslationManager(
     fun close() {
         translator?.close()
         _state.value = TranslationState.Idle
+    }
+
+    companion object {
+        private const val TAG = "TranslationManager"
     }
 }

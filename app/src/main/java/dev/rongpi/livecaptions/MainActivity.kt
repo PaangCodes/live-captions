@@ -72,6 +72,10 @@ class MainActivity : ComponentActivity() {
                 audioCaptureService?.setSttEngine(it)
                 it.start()
             }
+
+            translationManager?.let { trans ->
+                overlayManager?.showOverlay(trans.translatedText)
+            }
         } else {
             Log.e("MainActivity", "MediaProjection permission denied")
         }

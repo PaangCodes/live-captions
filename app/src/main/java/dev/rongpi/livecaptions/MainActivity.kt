@@ -111,7 +111,6 @@ class MainActivity : ComponentActivity() {
         sttEngine?.let { stt ->
             translationManager?.let { trans ->
                 trans.translate(stt.partialResults)
-                overlayManager?.showOverlay(trans.translatedText)
             }
         }
 

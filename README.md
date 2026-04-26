@@ -36,14 +36,15 @@ We have chosen the **System-Wide Overlay** approach. The application will run en
 
 ---
 
-## 3. Implementation Flow
+## 3. Current Implementation Status
 
-1.  **Initialization:** The user opens the app, selects the "Source Stream Language" (e.g., Japanese), the "Target Caption Language" (e.g., English), and their preferred STT engine (Vosk or Whisper). The app downloads any necessary ML Kit or STT models if they aren't already on the device.
-2.  **Start Service:** The user taps "Start Captions".
-3.  **Permissions & Capture:** The app requests `SYSTEM_ALERT_WINDOW` (Overlay) and `MediaProjection` permissions. The foreground service begins recording internal audio chunks.
-4.  **STT Processing:** The `AudioRecord` stream routes chunks through the active `SttEngine` implementation (Vosk or Whisper). If the user changes engines mid-stream, the app hot-swaps the underlying processor.
-5.  **Translation:** As the STT engine returns recognized text in the source language, the text is immediately fed into the Google ML Kit Translation client.
-6.  **Display:** The translated text is passed to the floating WindowManager overlay and updated on the screen in real-time, allowing the user to read along as they watch the stream in another app.
+The core components of the application are now successfully integrated into a cohesive pipeline orchestrated by `MainActivity`:
+
+1.  **Initialization:** `MainActivity` initializes the `VoskSttEngine`, the `TranslationManager` (using Google ML Kit), and the `OverlayManager`. Coroutine `Flow`s are mapped in `onCreate` to seamlessly pass partial recognition results to the translator, and translated text to the overlay.
+2.  **Permissions & Capture:** When the user taps "Start Live Captions", the app sequentially requests and validates `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW` permissions. Once granted, it launches the `MediaProjection` intent.
+3.  **STT Processing:** `AudioCaptureService` (a Foreground Service) intercepts internal device audio using `AudioPlaybackCapture` and feeds the byte array chunks directly into the injected `SttEngine`.
+4.  **Translation:** The `TranslationManager` collects the text from the `SttEngine`'s Flow and processes it locally using ML Kit models.
+5.  **Display:** The `OverlayManager` creates a custom `LifecycleOwner` and displays a Jetpack Compose floating window over other apps (`TYPE_APPLICATION_OVERLAY`) to show the translated captions in real-time.
 
 ---
 
@@ -61,8 +62,8 @@ Because we utilize entirely on-device models for both Speech-to-Text and Transla
 
 Testing an application that relies on system overlays and internal audio capture requires a multi-layered approach:
 
-*   **Unit Tests (JUnit):** Used to verify the business logic, state management (Jetpack Compose ViewModels), and the `SttEngine` abstraction layer (ensuring smooth switching between Vosk and Whisper logic).
-*   **Instrumentation Tests (Espresso / UI Automator):** Run on emulators to verify UI components, navigation, and the initiation of Foreground Services.
+*   **Unit Tests (JUnit):** Used to verify business logic and state transitions. We use Mockito and Coroutine testing to verify the `SttEngine` logic (e.g., `VoskSttEngineTest`). Run them using `./gradlew test`.
+*   **Instrumentation Tests (Espresso/Compose):** Used to verify UI elements (like `MainActivityTest`). Run them using `./gradlew connectedAndroidTest` on an active emulator or physical device.
 *   **Physical Device Testing:** Critical for this app. Emulators often struggle to accurately simulate `AudioPlaybackCapture` and complex `SYSTEM_ALERT_WINDOW` interactions across different Android OS versions. Manual testing on physical hardware is required to guarantee performance and battery efficiency.
 
 ---

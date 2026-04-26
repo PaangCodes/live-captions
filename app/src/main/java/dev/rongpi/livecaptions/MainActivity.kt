@@ -19,16 +19,26 @@ import android.content.ComponentName
 import android.content.ServiceConnection
 import android.os.IBinder
 import androidx.compose.ui.Modifier
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
+import androidx.core.content.ContextCompat
+import com.google.mlkit.nl.translate.TranslateLanguage
 import dev.rongpi.livecaptions.audio.AudioCaptureService
+import dev.rongpi.livecaptions.overlay.OverlayManager
 import dev.rongpi.livecaptions.stt.SttConfig
 import dev.rongpi.livecaptions.stt.SttEngine
 import dev.rongpi.livecaptions.stt.vosk.VoskSttEngine
+import dev.rongpi.livecaptions.translation.TranslationManager
 
 class MainActivity : ComponentActivity() {
 
     private var sttEngine: SttEngine? = null
     private var audioCaptureService: AudioCaptureService? = null
     private var isBound = false
+    private var translationManager: TranslationManager? = null
+    private var overlayManager: OverlayManager? = null
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
@@ -57,8 +67,33 @@ class MainActivity : ComponentActivity() {
                 putExtra(AudioCaptureService.EXTRA_RESULT_DATA, result.data)
             }
             startForegroundService(intent)
+
+            sttEngine?.let {
+                audioCaptureService?.setSttEngine(it)
+                it.start()
+            }
+
+            translationManager?.let { trans ->
+                overlayManager?.showOverlay(trans.translatedText)
+            }
         } else {
             Log.e("MainActivity", "MediaProjection permission denied")
+        }
+    }
+
+    private val overlayPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        checkPermissionsAndStart()
+    }
+
+    private val audioPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            checkPermissionsAndStart()
+        } else {
+            Log.e("MainActivity", "Audio permission denied")
         }
     }
 
@@ -67,6 +102,17 @@ class MainActivity : ComponentActivity() {
 
         sttEngine = VoskSttEngine()
         sttEngine?.initialize(SttConfig(this, "model-en"))
+
+        translationManager = TranslationManager(TranslateLanguage.ENGLISH, TranslateLanguage.SPANISH)
+        translationManager?.initialize()
+
+        overlayManager = OverlayManager(this)
+
+        sttEngine?.let { stt ->
+            translationManager?.let { trans ->
+                trans.translate(stt.partialResults)
+            }
+        }
 
         val intent = Intent(this, AudioCaptureService::class.java)
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
@@ -78,7 +124,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Button(onClick = { startAudioCapture() }) {
+                        Button(onClick = { startLiveCaptions() }) {
                             Text(text = "Start Live Captions")
                         }
                     }
@@ -87,16 +133,42 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun startAudioCapture() {
+    private fun startLiveCaptions() {
+        checkPermissionsAndStart()
+    }
+
+    private fun checkPermissionsAndStart() {
+        val hasAudioPermission = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        val hasOverlayPermission = Settings.canDrawOverlays(this)
+
+        if (!hasAudioPermission) {
+            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+
+        if (!hasOverlayPermission) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+            overlayPermissionLauncher.launch(intent)
+            return
+        }
+
+        requestMediaProjection()
+    }
+
+    private fun requestMediaProjection() {
         val mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         captureAudioResultLauncher.launch(mediaProjectionManager.createScreenCaptureIntent())
     }
 
-    private fun stopAudioCapture() {
+    private fun stopLiveCaptions() {
         val intent = Intent(this, AudioCaptureService::class.java).apply {
             action = AudioCaptureService.ACTION_STOP_CAPTURE
         }
         startService(intent)
+        sttEngine?.stop()
+        overlayManager?.hideOverlay()
     }
 
     override fun onDestroy() {
@@ -105,6 +177,7 @@ class MainActivity : ComponentActivity() {
             unbindService(serviceConnection)
             isBound = false
         }
-        stopAudioCapture()
+        stopLiveCaptions()
+        translationManager?.close()
     }
 }

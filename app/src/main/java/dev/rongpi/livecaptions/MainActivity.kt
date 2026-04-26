@@ -8,17 +8,15 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import android.content.ComponentName
 import android.content.ServiceConnection
 import android.os.IBinder
-import androidx.compose.ui.Modifier
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -29,12 +27,16 @@ import dev.rongpi.livecaptions.audio.AudioCaptureService
 import dev.rongpi.livecaptions.overlay.OverlayManager
 import dev.rongpi.livecaptions.stt.SttConfig
 import dev.rongpi.livecaptions.stt.SttEngine
+import dev.rongpi.livecaptions.stt.SttState
 import dev.rongpi.livecaptions.stt.vosk.VoskSttEngine
+import dev.rongpi.livecaptions.stt.whisper.WhisperSttEngine
 import dev.rongpi.livecaptions.translation.TranslationManager
+import dev.rongpi.livecaptions.translation.TranslationState
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
 
-    private var sttEngine: SttEngine? = null
+    private var sttEngine = MutableStateFlow<SttEngine>(VoskSttEngine())
     private var audioCaptureService: AudioCaptureService? = null
     private var isBound = false
     private var translationManager: TranslationManager? = null
@@ -46,9 +48,7 @@ class MainActivity : ComponentActivity() {
             audioCaptureService = binder.getService()
             isBound = true
 
-            sttEngine?.let {
-                audioCaptureService?.setSttEngine(it)
-            }
+            audioCaptureService?.setSttEngine(sttEngine.value)
         }
 
         override fun onServiceDisconnected(arg0: ComponentName) {
@@ -68,10 +68,8 @@ class MainActivity : ComponentActivity() {
             }
             startForegroundService(intent)
 
-            sttEngine?.let {
-                audioCaptureService?.setSttEngine(it)
-                it.start()
-            }
+            audioCaptureService?.setSttEngine(sttEngine.value)
+            sttEngine.value.start()
 
             translationManager?.let { trans ->
                 overlayManager?.showOverlay(trans.translatedText)
@@ -100,36 +98,124 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        sttEngine = VoskSttEngine()
-        sttEngine?.initialize(SttConfig(this, "model-en"))
+        sttEngine.value.initialize(SttConfig(this, "model-en"))
 
         translationManager = TranslationManager(TranslateLanguage.ENGLISH, TranslateLanguage.SPANISH)
         translationManager?.initialize()
 
         overlayManager = OverlayManager(this)
 
-        sttEngine?.let { stt ->
-            translationManager?.let { trans ->
-                trans.translate(stt.partialResults)
-            }
+        translationManager?.let { trans ->
+            trans.translate(sttEngine.value.partialResults)
         }
 
         val intent = Intent(this, AudioCaptureService::class.java)
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
 
         setContent {
+            var selectedStt by remember { mutableStateOf("Vosk") }
+            var sourceLang by remember { mutableStateOf(TranslateLanguage.ENGLISH) }
+            var targetLang by remember { mutableStateOf(TranslateLanguage.SPANISH) }
+
+            val sttState by sttEngine.value.state.collectAsState()
+            val transState = translationManager?.state?.collectAsState()
+
             MaterialTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("Settings", style = MaterialTheme.typography.headlineMedium)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // STT Engine Selection
+                        Text("STT Engine:")
+                        Row {
+                            RadioButton(
+                                selected = selectedStt == "Vosk",
+                                onClick = {
+                                    selectedStt = "Vosk"
+                                    switchSttEngine(VoskSttEngine())
+                                }
+                            )
+                            Text("Vosk", modifier = Modifier.align(Alignment.CenterVertically))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            RadioButton(
+                                selected = selectedStt == "Whisper",
+                                onClick = {
+                                    selectedStt = "Whisper"
+                                    switchSttEngine(WhisperSttEngine())
+                                }
+                            )
+                            Text("Whisper", modifier = Modifier.align(Alignment.CenterVertically))
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("STT State: $sttState")
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Language Selection
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Source:")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            LanguageDropdown(sourceLang) { lang ->
+                                sourceLang = lang
+                                translationManager?.updateLanguages(sourceLang, targetLang)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Target:")
+                            Spacer(modifier = Modifier.width(8.dp))
+                            LanguageDropdown(targetLang) { lang ->
+                                targetLang = lang
+                                translationManager?.updateLanguages(sourceLang, targetLang)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Translation State: ${transState?.value}")
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
                         Button(onClick = { startLiveCaptions() }) {
                             Text(text = "Start Live Captions")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(onClick = { stopLiveCaptions() }) {
+                            Text(text = "Stop Live Captions")
                         }
                     }
                 }
             }
+        }
+    }
+
+    private fun switchSttEngine(newEngine: SttEngine) {
+        val wasListening = sttEngine.value.state.value is SttState.Listening
+        if (wasListening) {
+            sttEngine.value.stop()
+        }
+        sttEngine.value = newEngine
+        sttEngine.value.initialize(SttConfig(this, "model-en"))
+
+        translationManager?.let { trans ->
+            trans.translate(sttEngine.value.partialResults)
+        }
+
+        audioCaptureService?.setSttEngine(sttEngine.value)
+        if (wasListening) {
+            sttEngine.value.start()
         }
     }
 
@@ -167,8 +253,42 @@ class MainActivity : ComponentActivity() {
             action = AudioCaptureService.ACTION_STOP_CAPTURE
         }
         startService(intent)
-        sttEngine?.stop()
+        sttEngine.value.stop()
         overlayManager?.hideOverlay()
+    }
+
+    @Composable
+    fun LanguageDropdown(selectedLanguage: String, onLanguageSelected: (String) -> Unit) {
+        var expanded by remember { mutableStateOf(false) }
+        val languages = listOf(
+            TranslateLanguage.ENGLISH,
+            TranslateLanguage.SPANISH,
+            TranslateLanguage.FRENCH,
+            TranslateLanguage.GERMAN,
+            TranslateLanguage.JAPANESE,
+            TranslateLanguage.KOREAN,
+            TranslateLanguage.CHINESE
+        )
+
+        Box {
+            OutlinedButton(onClick = { expanded = true }) {
+                Text(selectedLanguage)
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                languages.forEach { language ->
+                    DropdownMenuItem(
+                        text = { Text(language) },
+                        onClick = {
+                            onLanguageSelected(language)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
     }
 
     override fun onDestroy() {

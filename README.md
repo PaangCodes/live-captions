@@ -75,3 +75,8 @@ The project utilizes Android's standard Gradle build system to manage different 
 *   **Debug (Development):** Unoptimized builds with full logging and debugging capabilities, deployed directly from Android Studio during active development.
 *   **Release (Preview / Beta):** Optimized and minified builds distributed via **Firebase App Distribution** or the **Google Play Internal Testing Track**. This allows beta testers to easily install the app and test the overlay on real devices.
 *   **Release (Production):** The signed, fully optimized build published to the public Google Play Store.
+
+## 7. Releases
+
+You can download the latest debug APK from the root of the repository:
+[Download live-captions.apk](./live-captions.apk)

@@ -59,6 +59,10 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
 
+    // ML Kit Translation
+    implementation("com.google.mlkit:translate:17.0.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

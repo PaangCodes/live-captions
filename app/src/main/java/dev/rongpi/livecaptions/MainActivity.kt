@@ -68,10 +68,10 @@ class MainActivity : ComponentActivity() {
             }
             startForegroundService(intent)
 
-            sttEngine?.start()
-
-            translationManager?.translate(sttEngine!!.partialResults)
-            overlayManager?.showOverlay(translationManager!!.translatedText)
+            sttEngine?.let {
+                audioCaptureService?.setSttEngine(it)
+                it.start()
+            }
         } else {
             Log.e("MainActivity", "MediaProjection permission denied")
         }
@@ -103,6 +103,13 @@ class MainActivity : ComponentActivity() {
         translationManager?.initialize()
 
         overlayManager = OverlayManager(this)
+
+        sttEngine?.let { stt ->
+            translationManager?.let { trans ->
+                trans.translate(stt.partialResults)
+                overlayManager?.showOverlay(trans.translatedText)
+            }
+        }
 
         val intent = Intent(this, AudioCaptureService::class.java)
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)

@@ -12,13 +12,14 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import android.util.Log
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class TranslationManager(
-    private val sourceLanguage: String,
-    private val targetLanguage: String,
+    private var sourceLanguage: String,
+    private var targetLanguage: String,
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _state = MutableStateFlow<TranslationState>(TranslationState.Idle)
@@ -28,6 +29,15 @@ class TranslationManager(
     val translatedText: SharedFlow<String> = _translatedText.asSharedFlow()
 
     private var translator: Translator? = null
+    private var translateJob: Job? = null
+
+    fun updateLanguages(source: String, target: String) {
+        if (sourceLanguage == source && targetLanguage == target) return
+        sourceLanguage = source
+        targetLanguage = target
+        close()
+        initialize()
+    }
 
     fun initialize() {
         coroutineScope.launch {
@@ -57,7 +67,8 @@ class TranslationManager(
     }
 
     fun translate(textStream: SharedFlow<String>) {
-        coroutineScope.launch {
+        translateJob?.cancel()
+        translateJob = coroutineScope.launch {
             textStream.collect { text ->
                 if (_state.value is TranslationState.Ready) {
                     try {

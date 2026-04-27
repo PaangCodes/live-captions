@@ -1,6 +1,9 @@
 package dev.rongpi.livecaptions.translation
 
 import com.google.mlkit.common.model.DownloadConditions
+import com.google.mlkit.common.model.RemoteModelManager
+import com.google.mlkit.nl.translate.TranslateLanguage
+import com.google.mlkit.nl.translate.TranslateRemoteModel
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
@@ -30,8 +33,61 @@ class TranslationManager(
     private val _translatedText = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val translatedText: SharedFlow<String> = _translatedText.asSharedFlow()
 
+    private val _downloadedLanguages = MutableStateFlow<List<String>>(emptyList())
+    val downloadedLanguages: StateFlow<List<String>> = _downloadedLanguages.asStateFlow()
+
     private var translator: Translator? = null
     private var translateJob: Job? = null
+    private val modelManager = RemoteModelManager.getInstance()
+
+    init {
+        refreshDownloadedLanguages()
+    }
+
+    private fun refreshDownloadedLanguages() {
+        coroutineScope.launch {
+            try {
+                val models = modelManager.getDownloadedModels(TranslateRemoteModel::class.java).await()
+                _downloadedLanguages.value = models.map { it.language }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to get downloaded models", e)
+            }
+        }
+    }
+
+    fun downloadLanguage(language: String) {
+        coroutineScope.launch {
+            try {
+                val model = TranslateRemoteModel.Builder(language).build()
+                val conditions = DownloadConditions.Builder().build()
+                modelManager.download(model, conditions).await()
+                refreshDownloadedLanguages()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to download language model $language", e)
+            }
+        }
+    }
+
+    fun deleteLanguage(language: String) {
+        coroutineScope.launch {
+            try {
+                val model = TranslateRemoteModel.Builder(language).build()
+                modelManager.deleteDownloadedModel(model).await()
+                refreshDownloadedLanguages()
+
+                if (sourceLanguage == language) {
+                    sourceLanguage = TranslateLanguage.ENGLISH
+                    updateLanguages(sourceLanguage, targetLanguage)
+                }
+                if (targetLanguage == language) {
+                    targetLanguage = TranslateLanguage.ENGLISH
+                    updateLanguages(sourceLanguage, targetLanguage)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to delete language model $language", e)
+            }
+        }
+    }
 
     fun updateLanguages(source: String, target: String) {
         if (sourceLanguage == source && targetLanguage == target) return

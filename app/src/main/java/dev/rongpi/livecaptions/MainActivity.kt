@@ -14,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import android.content.ComponentName
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
@@ -121,94 +123,175 @@ class MainActivity : ComponentActivity() {
 
             val sttState by sttEngine.value.state.collectAsState()
             val transState = translationManager?.state?.collectAsState()
+            val downloadedLangs = translationManager?.downloadedLanguages?.collectAsState(initial = emptyList())?.value ?: emptyList()
 
             MaterialTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                Scaffold(
+                    topBar = {
+                        @OptIn(ExperimentalMaterial3Api::class)
+                        TopAppBar(
+                            title = { Text("Live Captions") },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                titleContentColor = MaterialTheme.colorScheme.primary,
+                            )
+                        )
+                    }
+                ) { innerPadding ->
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .padding(horizontal = 16.dp)
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Settings", style = MaterialTheme.typography.headlineMedium)
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // STT Engine Selection
-                        Text("STT Engine:")
-                        Row {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.selectable(
-                                    selected = selectedStt == "Vosk",
-                                    onClick = {
-                                        selectedStt = "Vosk"
-                                        switchSttEngine(VoskSttEngine())
-                                    },
-                                    role = Role.RadioButton
-                                )
-                            ) {
-                                RadioButton(selected = selectedStt == "Vosk", onClick = null)
-                                Text("Vosk", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.selectable(
-                                    selected = selectedStt == "Whisper",
-                                    onClick = {
-                                        selectedStt = "Whisper"
-                                        switchSttEngine(WhisperSttEngine())
-                                    },
-                                    role = Role.RadioButton
-                                )
-                            ) {
-                                RadioButton(selected = selectedStt == "Whisper", onClick = null)
-                                Text("Whisper", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                        // STT Configuration
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Speech-to-Text Settings", style = MaterialTheme.typography.titleMedium)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.selectable(
+                                            selected = selectedStt == "Vosk",
+                                            onClick = {
+                                                selectedStt = "Vosk"
+                                                switchSttEngine(VoskSttEngine())
+                                            },
+                                            role = Role.RadioButton
+                                        )
+                                    ) {
+                                        RadioButton(selected = selectedStt == "Vosk", onClick = null)
+                                        Text("Vosk", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.selectable(
+                                            selected = selectedStt == "Whisper",
+                                            onClick = {
+                                                selectedStt = "Whisper"
+                                                switchSttEngine(WhisperSttEngine())
+                                            },
+                                            role = Role.RadioButton
+                                        )
+                                    ) {
+                                        RadioButton(selected = selectedStt == "Whisper", onClick = null)
+                                        Text("Whisper", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("State: ${sttState.javaClass.simpleName}")
+
+                                if (sttState is SttState.Downloading) {
+                                    val dl = sttState as SttState.Downloading
+                                    val progress = if (dl.totalBytes > 0) dl.downloadedBytes.toFloat() / dl.totalBytes else 0f
+                                    val mbDownloaded = dl.downloadedBytes / (1024 * 1024)
+                                    val mbTotal = dl.totalBytes / (1024 * 1024)
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    LinearProgressIndicator(
+                                        progress = progress,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Text("$mbDownloaded MB / $mbTotal MB")
+                                }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("STT State: $sttState")
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Language Selection
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Source:")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            LanguageDropdown(sourceLang) { lang ->
-                                sourceLang = lang
-                                translationManager?.updateLanguages(sourceLang, targetLang)
+                        // Translation Configuration
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Translation Settings", style = MaterialTheme.typography.titleMedium)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Source:")
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    LanguageDropdown(sourceLang) { lang ->
+                                        sourceLang = lang
+                                        translationManager?.updateLanguages(sourceLang, targetLang)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Target:")
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    LanguageDropdown(targetLang) { lang ->
+                                        targetLang = lang
+                                        translationManager?.updateLanguages(sourceLang, targetLang)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("State: ${transState?.value?.javaClass?.simpleName}")
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Target:")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            LanguageDropdown(targetLang) { lang ->
-                                targetLang = lang
-                                translationManager?.updateLanguages(sourceLang, targetLang)
+                        // ML Kit Language Management
+                        ElevatedCard(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("ML Kit Language Models", style = MaterialTheme.typography.titleMedium)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                val allLangs = TranslateLanguage.getAllLanguages()
+                                allLangs.forEach { lang ->
+                                    val isDownloaded = downloadedLangs.contains(lang)
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(lang.uppercase())
+                                        if (isDownloaded) {
+                                            Button(
+                                                onClick = { translationManager?.deleteLanguage(lang) },
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                            ) {
+                                                Text("Delete")
+                                            }
+                                        } else {
+                                            Button(onClick = { translationManager?.downloadLanguage(lang) }) {
+                                                Text("Download")
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Translation State: ${transState?.value}")
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        Button(onClick = { startLiveCaptions() }) {
+                        Button(onClick = { startLiveCaptions() }, modifier = Modifier.fillMaxWidth()) {
                             Text(text = "Start Live Captions")
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Button(onClick = { stopLiveCaptions() }) {
+                        Button(onClick = { stopLiveCaptions() }, modifier = Modifier.fillMaxWidth()) {
                             Text(text = "Stop Live Captions")
                         }
+
+                        Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }

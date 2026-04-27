@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import android.util.Log
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -69,7 +71,9 @@ class TranslationManager(
     fun translate(textStream: SharedFlow<String>) {
         translateJob?.cancel()
         translateJob = coroutineScope.launch {
-            textStream.collect { text ->
+            // Use distinctUntilChanged to avoid translating the exact same text again.
+            // Use conflate so if translation is slow, we drop stale intermediate strings and translate the latest.
+            textStream.distinctUntilChanged().conflate().collect { text ->
                 if (_state.value is TranslationState.Ready) {
                     try {
                         val translated = translator?.translate(text)?.await()

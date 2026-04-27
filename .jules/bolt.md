@@ -1,0 +1,3 @@
+## 2024-04-26 - [Translation Pipeline Bottleneck]
+**Learning:** In a live captioning pipeline where Speech-to-Text (STT) continuously emits partial results, passing every single emission sequentially to an on-device translation model (like Google ML Kit) creates a severe performance bottleneck. It causes unnecessary CPU churn and potential backpressure by translating identical text or stale intermediate updates.
+**Action:** Apply flow operators like `conflate()` (to drop stale intermediate values if the translator is busy) and `distinctUntilChanged()` (to avoid translating the exact same text twice) before processing the stream with expensive ML operations.

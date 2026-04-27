@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import android.content.ComponentName
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.Manifest
@@ -136,23 +138,35 @@ class MainActivity : ComponentActivity() {
                         // STT Engine Selection
                         Text("STT Engine:")
                         Row {
-                            RadioButton(
-                                selected = selectedStt == "Vosk",
-                                onClick = {
-                                    selectedStt = "Vosk"
-                                    switchSttEngine(VoskSttEngine())
-                                }
-                            )
-                            Text("Vosk", modifier = Modifier.align(Alignment.CenterVertically))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.selectable(
+                                    selected = selectedStt == "Vosk",
+                                    onClick = {
+                                        selectedStt = "Vosk"
+                                        switchSttEngine(VoskSttEngine())
+                                    },
+                                    role = Role.RadioButton
+                                )
+                            ) {
+                                RadioButton(selected = selectedStt == "Vosk", onClick = null)
+                                Text("Vosk", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                            }
                             Spacer(modifier = Modifier.width(8.dp))
-                            RadioButton(
-                                selected = selectedStt == "Whisper",
-                                onClick = {
-                                    selectedStt = "Whisper"
-                                    switchSttEngine(WhisperSttEngine())
-                                }
-                            )
-                            Text("Whisper", modifier = Modifier.align(Alignment.CenterVertically))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.selectable(
+                                    selected = selectedStt == "Whisper",
+                                    onClick = {
+                                        selectedStt = "Whisper"
+                                        switchSttEngine(WhisperSttEngine())
+                                    },
+                                    role = Role.RadioButton
+                                )
+                            ) {
+                                RadioButton(selected = selectedStt == "Whisper", onClick = null)
+                                Text("Whisper", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))

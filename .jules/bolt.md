@@ -1,3 +1,7 @@
 ## 2024-04-26 - [Translation Pipeline Bottleneck]
 **Learning:** In a live captioning pipeline where Speech-to-Text (STT) continuously emits partial results, passing every single emission sequentially to an on-device translation model (like Google ML Kit) creates a severe performance bottleneck. It causes unnecessary CPU churn and potential backpressure by translating identical text or stale intermediate updates.
 **Action:** Apply flow operators like `conflate()` (to drop stale intermediate values if the translator is busy) and `distinctUntilChanged()` (to avoid translating the exact same text twice) before processing the stream with expensive ML operations.
+
+## 2024-04-27 - [Throttle StateFlow Emissions During Large Data Processing]
+**Learning:** Emitting progress updates into a StateFlow for every small buffer read (e.g., an 8KB chunk of a large model download) triggers thousands of rapid main-thread UI recompositions. This severe CPU churn blocks the main thread, causes UI jank, and slows down the download process itself because flow collection and updates are overwhelmed.
+**Action:** Always throttle high-frequency data streams (like file download progress) using a time-based check (e.g., emit at most once every 100ms) or size-based delta before emitting to the UI state flow.

@@ -41,10 +41,15 @@ open class ModelDownloader {
             val buffer = ByteArray(8192)
             var downloadedBytes = 0L
             var len: Int
+            var lastEmitTime = 0L
             while (inputStream.read(buffer).also { len = it } > 0) {
                 fos.write(buffer, 0, len)
                 downloadedBytes += len
-                emit(DownloadProgress(downloadedBytes, totalBytes))
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                    emit(DownloadProgress(downloadedBytes, totalBytes))
+                    lastEmitTime = currentTime
+                }
             }
         }
 
@@ -109,10 +114,15 @@ open class ModelDownloader {
             val buffer = ByteArray(8192)
             var downloadedBytes = 0L
             var len: Int
+            var lastEmitTime = 0L
             while (inputStream.read(buffer).also { len = it } > 0) {
                 fos.write(buffer, 0, len)
                 downloadedBytes += len
-                emit(DownloadProgress(downloadedBytes, totalBytes))
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                    emit(DownloadProgress(downloadedBytes, totalBytes))
+                    lastEmitTime = currentTime
+                }
             }
         }
     }.flowOn(Dispatchers.IO)

@@ -10,6 +10,7 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.io.BufferedInputStream
 import java.util.zip.ZipInputStream
 
 open class ModelDownloader {
@@ -54,7 +55,7 @@ open class ModelDownloader {
         }
 
         // 2. Extract after download finishes
-        ZipInputStream(tempZipFile.inputStream()).use { zis ->
+        ZipInputStream(BufferedInputStream(tempZipFile.inputStream())).use { zis ->
             var zipEntry = zis.nextEntry
             val buffer = ByteArray(8192)
 

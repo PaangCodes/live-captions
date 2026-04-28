@@ -31,6 +31,7 @@ import android.provider.Settings
 import androidx.core.content.ContextCompat
 import com.google.mlkit.nl.translate.TranslateLanguage
 import dev.rongpi.livecaptions.audio.AudioCaptureService
+import java.util.Locale
 import dev.rongpi.livecaptions.overlay.OverlayManager
 import dev.rongpi.livecaptions.stt.SttConfig
 import dev.rongpi.livecaptions.stt.SttEngine
@@ -264,7 +265,7 @@ class MainActivity : ComponentActivity() {
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text(lang.uppercase())
+                                        Text(Locale(lang).displayLanguage.replaceFirstChar { it.uppercase() })
                                         if (isDownloaded) {
                                             Button(
                                                 onClick = { translationManager?.deleteLanguage(lang) },
@@ -372,7 +373,7 @@ class MainActivity : ComponentActivity() {
 
         Box {
             OutlinedButton(onClick = { expanded = true }) {
-                Text(selectedLanguage)
+                Text(Locale(selectedLanguage).displayLanguage.replaceFirstChar { it.uppercase() })
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = "Expand language options"
@@ -384,7 +385,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 languages.forEach { language ->
                     DropdownMenuItem(
-                        text = { Text(language) },
+                        text = { Text(Locale(language).displayLanguage.replaceFirstChar { it.uppercase() }) },
                         onClick = {
                             onLanguageSelected(language)
                             expanded = false

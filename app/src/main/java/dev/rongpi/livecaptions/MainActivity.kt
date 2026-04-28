@@ -20,6 +20,9 @@ import android.content.ComponentName
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
 import android.content.ServiceConnection
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.Icon
 import android.os.IBinder
 import android.Manifest
 import android.content.pm.PackageManager
@@ -370,6 +373,10 @@ class MainActivity : ComponentActivity() {
         Box {
             OutlinedButton(onClick = { expanded = true }) {
                 Text(selectedLanguage)
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Expand language options"
+                )
             }
             DropdownMenu(
                 expanded = expanded,

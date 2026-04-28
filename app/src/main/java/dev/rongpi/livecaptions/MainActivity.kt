@@ -264,7 +264,7 @@ class MainActivity : ComponentActivity() {
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text(lang.uppercase())
+                                        Text(java.util.Locale(lang).displayLanguage.replaceFirstChar { it.uppercase() })
                                         if (isDownloaded) {
                                             Button(
                                                 onClick = { translationManager?.deleteLanguage(lang) },
@@ -372,7 +372,7 @@ class MainActivity : ComponentActivity() {
 
         Box {
             OutlinedButton(onClick = { expanded = true }) {
-                Text(selectedLanguage)
+                Text(java.util.Locale(selectedLanguage).displayLanguage.replaceFirstChar { it.uppercase() })
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = "Expand language options"
@@ -384,7 +384,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 languages.forEach { language ->
                     DropdownMenuItem(
-                        text = { Text(language) },
+                        text = { Text(java.util.Locale(language).displayLanguage.replaceFirstChar { it.uppercase() }) },
                         onClick = {
                             onLanguageSelected(language)
                             expanded = false

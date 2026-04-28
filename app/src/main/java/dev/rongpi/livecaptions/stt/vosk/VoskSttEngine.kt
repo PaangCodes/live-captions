@@ -1,5 +1,6 @@
 package dev.rongpi.livecaptions.stt.vosk
 
+import android.util.Log
 import dev.rongpi.livecaptions.stt.SttConfig
 import dev.rongpi.livecaptions.stt.SttEngine
 import dev.rongpi.livecaptions.stt.SttState
@@ -48,7 +49,8 @@ class VoskSttEngine(
                     }
                     _state.value = SttState.Ready
                 } catch (e: Exception) {
-                    _state.value = SttState.Error(e)
+                    Log.e("VoskSttEngine", "Exception initializing Vosk model", e)
+                    _state.value = SttState.Error("Failed to initialize Vosk model")
                 }
             } else {
                 _state.value = SttState.Ready

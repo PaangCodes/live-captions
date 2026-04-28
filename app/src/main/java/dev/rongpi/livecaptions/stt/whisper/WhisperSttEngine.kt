@@ -1,5 +1,6 @@
 package dev.rongpi.livecaptions.stt.whisper
 
+import android.util.Log
 import dev.rongpi.livecaptions.stt.SttConfig
 import dev.rongpi.livecaptions.stt.SttEngine
 import dev.rongpi.livecaptions.stt.SttState
@@ -48,7 +49,8 @@ class WhisperSttEngine(
                     }
                     _state.value = SttState.Ready
                 } catch (e: Exception) {
-                    _state.value = SttState.Error(e)
+                    Log.e("WhisperSttEngine", "Exception initializing Whisper model", e)
+                    _state.value = SttState.Error("Failed to initialize Whisper model")
                 }
             } else {
                 _state.value = SttState.Ready

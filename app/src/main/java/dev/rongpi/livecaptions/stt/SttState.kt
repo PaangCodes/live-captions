@@ -6,5 +6,5 @@ sealed interface SttState {
     data class Downloading(val downloadedBytes: Long, val totalBytes: Long) : SttState
     data object Ready : SttState
     data object Listening : SttState
-    data class Error(val exception: Throwable) : SttState
+    data class Error(val message: String) : SttState
 }

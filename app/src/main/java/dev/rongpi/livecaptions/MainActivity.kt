@@ -254,8 +254,15 @@ class MainActivity : ComponentActivity() {
                                 Text("ML Kit Language Models", style = MaterialTheme.typography.titleMedium)
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                val allLangs = TranslateLanguage.getAllLanguages()
-                                allLangs.forEach { lang ->
+                                // ⚡ Bolt Optimization: Memoize Locale instantiation and list sorting.
+                                // Prevents hundreds of redundant object allocations per second during high-frequency
+                                // download progress StateFlow emissions, significantly reducing UI jank.
+                                val allLangs = remember {
+                                    TranslateLanguage.getAllLanguages().map { lang ->
+                                        lang to java.util.Locale(lang).displayLanguage.replaceFirstChar { it.uppercase() }
+                                    }.sortedBy { it.second }
+                                }
+                                allLangs.forEach { (lang, displayName) ->
                                     val isDownloaded = downloadedLangs.contains(lang)
                                     Row(
                                         modifier = Modifier
@@ -264,7 +271,7 @@ class MainActivity : ComponentActivity() {
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text(java.util.Locale(lang).displayLanguage.replaceFirstChar { it.uppercase() })
+                                        Text(displayName)
                                         if (isDownloaded) {
                                             Button(
                                                 onClick = { translationManager?.deleteLanguage(lang) },
@@ -360,15 +367,22 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun LanguageDropdown(selectedLanguage: String, onLanguageSelected: (String) -> Unit) {
         var expanded by remember { mutableStateOf(false) }
-        val languages = listOf(
-            TranslateLanguage.ENGLISH,
-            TranslateLanguage.SPANISH,
-            TranslateLanguage.FRENCH,
-            TranslateLanguage.GERMAN,
-            TranslateLanguage.JAPANESE,
-            TranslateLanguage.KOREAN,
-            TranslateLanguage.CHINESE
-        )
+
+        // ⚡ Bolt Optimization: Memoize the static language list and Locale instantiation.
+        // Prevents redundant string formatting when the dropdown expands or parent recomposes.
+        val languages = remember {
+            listOf(
+                TranslateLanguage.ENGLISH,
+                TranslateLanguage.SPANISH,
+                TranslateLanguage.FRENCH,
+                TranslateLanguage.GERMAN,
+                TranslateLanguage.JAPANESE,
+                TranslateLanguage.KOREAN,
+                TranslateLanguage.CHINESE
+            ).map { lang ->
+                lang to java.util.Locale(lang).displayLanguage.replaceFirstChar { it.uppercase() }
+            }
+        }
 
         Box {
             OutlinedButton(onClick = { expanded = true }) {
@@ -382,9 +396,9 @@ class MainActivity : ComponentActivity() {
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                languages.forEach { language ->
+                languages.forEach { (language, displayName) ->
                     DropdownMenuItem(
-                        text = { Text(java.util.Locale(language).displayLanguage.replaceFirstChar { it.uppercase() }) },
+                        text = { Text(displayName) },
                         onClick = {
                             onLanguageSelected(language)
                             expanded = false

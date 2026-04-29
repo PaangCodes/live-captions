@@ -8,3 +8,6 @@
 ## 2024-04-28 - [Zip Extraction Bottleneck]
 **Learning:** Extracting zip files entry-by-entry using `ZipInputStream(FileInputStream)` is extremely slow due to unbuffered I/O reads. By default, `FileInputStream` reads small chunks unbuffered, causing immense overhead, especially for large zip files with many entries (like STT models).
 **Action:** Always wrap the underlying `InputStream` with a `BufferedInputStream` before passing it to `ZipInputStream`. E.g., `ZipInputStream(BufferedInputStream(file.inputStream()))`.
+## 2024-05-18 - [Unmemoized Locale Instantiation in High-Frequency Recomposition]
+**Learning:** Instantiating `java.util.Locale(lang)` inside a Jetpack Compose layout (e.g., `MainActivity.kt` ML Kit Language list) without memoization (`remember`) causes severe performance overhead. When a parent component observes a high-frequency `StateFlow` (like `DownloadProgress`), every rapid UI update triggers a full recomposition, resulting in hundreds of redundant object allocations and string formatting operations per second, leading to UI jank and GC pressure.
+**Action:** Always memoize expensive operations (like `Locale` instantiation, list sorting, and string formatting) using `remember` when rendering lists of localizable strings in Compose, especially if parent components observe fast-updating states.

@@ -5,3 +5,6 @@
 ## 2024-04-27 - [Throttle StateFlow Emissions During Large Data Processing]
 **Learning:** Emitting progress updates into a StateFlow for every small buffer read (e.g., an 8KB chunk of a large model download) triggers thousands of rapid main-thread UI recompositions. This severe CPU churn blocks the main thread, causes UI jank, and slows down the download process itself because flow collection and updates are overwhelmed.
 **Action:** Always throttle high-frequency data streams (like file download progress) using a time-based check (e.g., emit at most once every 100ms) or size-based delta before emitting to the UI state flow.
+## 2024-04-28 - [Zip Extraction Bottleneck]
+**Learning:** Extracting zip files entry-by-entry using `ZipInputStream(FileInputStream)` is extremely slow due to unbuffered I/O reads. By default, `FileInputStream` reads small chunks unbuffered, causing immense overhead, especially for large zip files with many entries (like STT models).
+**Action:** Always wrap the underlying `InputStream` with a `BufferedInputStream` before passing it to `ZipInputStream`. E.g., `ZipInputStream(BufferedInputStream(file.inputStream()))`.

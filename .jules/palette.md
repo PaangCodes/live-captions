@@ -9,3 +9,7 @@
 ## 2024-05-25 - Localized language display names
 **Learning:** Raw ISO language codes (e.g., "en", "es") are not user-friendly in UI elements like dropdown menus or downloaded language lists.
 **Action:** Always format raw ISO language codes into localized, human-readable language names using `java.util.Locale(lang).displayLanguage.replaceFirstChar { it.uppercase() }` to improve the intuitiveness of language selection interfaces.
+
+## 2024-05-26 - Confirmation dialog for destructive actions
+**Learning:** Destructive actions without confirmation (like deleting downloaded models) lead to poor user experiences and accidental data loss. Furthermore, when managing states like dialog visibility inside a dynamic list in Jetpack Compose, the `key(identifier)` function must be used so that local state tracks correctly across recompositions.
+**Action:** Always add an `AlertDialog` to prompt the user before performing destructive actions. Always wrap components in a `key()` block when mapping lists to Compose elements that contain their own mutable state.

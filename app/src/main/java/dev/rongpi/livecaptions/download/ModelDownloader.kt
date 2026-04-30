@@ -19,6 +19,9 @@ open class ModelDownloader {
     data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long)
 
     open fun downloadAndExtractZip(context: Context, url: String, targetDirName: String): Flow<DownloadProgress> = flow {
+        if (!url.startsWith("https://", ignoreCase = true)) {
+            throw IllegalArgumentException("Only HTTPS URLs are allowed for downloads to prevent Man-in-the-Middle attacks.")
+        }
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()
 
@@ -94,6 +97,9 @@ open class ModelDownloader {
     }.flowOn(Dispatchers.IO)
 
     open fun downloadFile(context: Context, url: String, targetFileName: String): Flow<DownloadProgress> = flow {
+        if (!url.startsWith("https://", ignoreCase = true)) {
+            throw IllegalArgumentException("Only HTTPS URLs are allowed for downloads to prevent Man-in-the-Middle attacks.")
+        }
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()
 

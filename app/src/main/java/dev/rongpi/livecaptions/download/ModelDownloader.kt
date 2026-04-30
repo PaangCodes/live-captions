@@ -19,6 +19,15 @@ open class ModelDownloader {
     data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long)
 
     open fun downloadAndExtractZip(context: Context, url: String, targetDirName: String): Flow<DownloadProgress> = flow {
+        if (!url.startsWith("https://", ignoreCase = true)) {
+            throw SecurityException("Insecure HTTP connections are not allowed for downloading models.")
+        }
+
+        val targetDir = File(context.filesDir, targetDirName)
+        if (!targetDir.canonicalPath.startsWith(context.filesDir.canonicalPath)) {
+            throw SecurityException("Invalid target directory name: prevents path traversal.")
+        }
+
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()
 
@@ -30,7 +39,6 @@ open class ModelDownloader {
         val totalBytes = body.contentLength()
         val inputStream: InputStream = body.byteStream()
 
-        val targetDir = File(context.filesDir, targetDirName)
         if (!targetDir.exists()) {
             targetDir.mkdirs()
         }
@@ -94,6 +102,15 @@ open class ModelDownloader {
     }.flowOn(Dispatchers.IO)
 
     open fun downloadFile(context: Context, url: String, targetFileName: String): Flow<DownloadProgress> = flow {
+        if (!url.startsWith("https://", ignoreCase = true)) {
+            throw SecurityException("Insecure HTTP connections are not allowed for downloading models.")
+        }
+
+        val targetFile = File(context.filesDir, targetFileName)
+        if (!targetFile.canonicalPath.startsWith(context.filesDir.canonicalPath)) {
+            throw SecurityException("Invalid target file name: prevents path traversal.")
+        }
+
         val request = Request.Builder().url(url).build()
         val response = client.newCall(request).execute()
 
@@ -105,7 +122,6 @@ open class ModelDownloader {
         val totalBytes = body.contentLength()
         val inputStream: InputStream = body.byteStream()
 
-        val targetFile = File(context.filesDir, targetFileName)
         val parent = targetFile.parentFile
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
              throw Exception("Failed to create directory $parent")

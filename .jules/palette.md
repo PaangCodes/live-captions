@@ -9,3 +9,6 @@
 ## 2024-05-25 - Localized language display names
 **Learning:** Raw ISO language codes (e.g., "en", "es") are not user-friendly in UI elements like dropdown menus or downloaded language lists.
 **Action:** Always format raw ISO language codes into localized, human-readable language names using `java.util.Locale(lang).displayLanguage.replaceFirstChar { it.uppercase() }` to improve the intuitiveness of language selection interfaces.
+## 2024-05-18 - Compose State Leak in Dynamic Lists
+**Learning:** When iterating over a dynamic list in Jetpack Compose to generate UI components that hold internal mutable state (e.g., a "show dialog" boolean), that state can leak or misalign if the list reorders or changes.
+**Action:** Always wrap the content block of the iteration in a `key(itemIdentifier) { ... }` function to bind the internal state strictly to that specific item, ensuring proper lifecycle and tracking across recompositions.

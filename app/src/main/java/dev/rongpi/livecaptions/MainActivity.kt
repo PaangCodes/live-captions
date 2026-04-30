@@ -384,9 +384,16 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // ⚡ Bolt Optimization: Memoize the locale instantiation and formatting based on selectedLanguage.
+        // This avoids expensive String manipulations on every layout recomposition triggered
+        // by rapid flow state emissions.
+        val selectedDisplayName = remember(selectedLanguage) {
+            java.util.Locale(selectedLanguage).displayLanguage.replaceFirstChar { it.uppercase() }
+        }
+
         Box {
             OutlinedButton(onClick = { expanded = true }) {
-                Text(java.util.Locale(selectedLanguage).displayLanguage.replaceFirstChar { it.uppercase() })
+                Text(selectedDisplayName)
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = "Expand language options"

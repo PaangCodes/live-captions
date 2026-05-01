@@ -45,60 +45,78 @@ open class ModelDownloader {
 
         val tempZipFile = File(context.filesDir, "$targetDirName.zip")
 
-        // 1. Download to temporary zip file, tracking accurate compressed bytes.
-        FileOutputStream(tempZipFile).use { fos ->
-            val buffer = ByteArray(8192)
-            var downloadedBytes = 0L
-            var len: Int
-            var lastEmitTime = 0L
-            while (inputStream.read(buffer).also { len = it } > 0) {
-                fos.write(buffer, 0, len)
-                downloadedBytes += len
-                val currentTime = System.currentTimeMillis()
-                if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
-                    emit(DownloadProgress(downloadedBytes, totalBytes))
-                    lastEmitTime = currentTime
+        try {
+            // 1. Download to temporary zip file, tracking accurate compressed bytes.
+            FileOutputStream(tempZipFile).use { fos ->
+                val buffer = ByteArray(8192)
+                var downloadedBytes = 0L
+                var len: Int
+                var lastEmitTime = 0L
+                while (inputStream.read(buffer).also { len = it } > 0) {
+                    fos.write(buffer, 0, len)
+                    downloadedBytes += len
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                        emit(DownloadProgress(downloadedBytes, totalBytes))
+                        lastEmitTime = currentTime
+                    }
                 }
             }
-        }
 
-        // 2. Extract after download finishes
-        ZipInputStream(BufferedInputStream(tempZipFile.inputStream())).use { zis ->
-            var zipEntry = zis.nextEntry
-            val buffer = ByteArray(8192)
+            // 2. Extract after download finishes
+            ZipInputStream(BufferedInputStream(tempZipFile.inputStream())).use { zis ->
+                var zipEntry = zis.nextEntry
+                val buffer = ByteArray(8192)
 
-            while (zipEntry != null) {
-                val newFile = File(targetDir, zipEntry.name)
+                var totalUncompressedBytes = 0L
+                var fileCount = 0
+                val maxUncompressedBytes = 1024L * 1024L * 1024L // 1 GB limit
+                val maxFileCount = 10000
 
-                // Prevent Zip Slip vulnerability
-                if (!newFile.canonicalPath.startsWith(targetDir.canonicalPath + File.separator)) {
-                    throw Exception("Entry is outside of the target dir: ${zipEntry.name}")
-                }
-
-                if (zipEntry.isDirectory) {
-                    if (!newFile.isDirectory && !newFile.mkdirs()) {
-                        throw Exception("Failed to create directory $newFile")
-                    }
-                } else {
-                    val parent = newFile.parentFile
-                    if (parent != null && !parent.isDirectory && !parent.mkdirs()) {
-                        throw Exception("Failed to create directory $parent")
+                while (zipEntry != null) {
+                    fileCount++
+                    if (fileCount > maxFileCount) {
+                        throw SecurityException("Zip bomb detected: too many files")
                     }
 
-                    FileOutputStream(newFile).use { fos ->
-                        var len: Int
-                        while (zis.read(buffer).also { len = it } > 0) {
-                            fos.write(buffer, 0, len)
+                    val newFile = File(targetDir, zipEntry.name)
+
+                    // Prevent Zip Slip vulnerability
+                    if (!newFile.canonicalPath.startsWith(targetDir.canonicalPath + File.separator)) {
+                        throw Exception("Entry is outside of the target dir: ${zipEntry.name}")
+                    }
+
+                    if (zipEntry.isDirectory) {
+                        if (!newFile.isDirectory && !newFile.mkdirs()) {
+                            throw Exception("Failed to create directory $newFile")
+                        }
+                    } else {
+                        val parent = newFile.parentFile
+                        if (parent != null && !parent.isDirectory && !parent.mkdirs()) {
+                            throw Exception("Failed to create directory $parent")
+                        }
+
+                        FileOutputStream(newFile).use { fos ->
+                            var len: Int
+                            while (zis.read(buffer).also { len = it } > 0) {
+                                totalUncompressedBytes += len
+                                if (totalUncompressedBytes > maxUncompressedBytes) {
+                                    throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                                }
+                                fos.write(buffer, 0, len)
+                            }
                         }
                     }
+                    zipEntry = zis.nextEntry
                 }
-                zipEntry = zis.nextEntry
+                zis.closeEntry()
             }
-            zis.closeEntry()
+        } finally {
+            // 3. Clean up the temp zip file
+            if (tempZipFile.exists()) {
+                tempZipFile.delete()
+            }
         }
-
-        // 3. Clean up the temp zip file
-        tempZipFile.delete()
     }.flowOn(Dispatchers.IO)
 
     open fun downloadFile(context: Context, url: String, targetFileName: String): Flow<DownloadProgress> = flow {
@@ -127,6 +145,8 @@ open class ModelDownloader {
              throw Exception("Failed to create directory $parent")
         }
 
+        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
+
         FileOutputStream(targetFile).use { fos ->
             val buffer = ByteArray(8192)
             var downloadedBytes = 0L
@@ -135,6 +155,12 @@ open class ModelDownloader {
             while (inputStream.read(buffer).also { len = it } > 0) {
                 fos.write(buffer, 0, len)
                 downloadedBytes += len
+
+                if (downloadedBytes > maxDownloadBytes) {
+                    targetFile.delete() // clean up partial file
+                    throw SecurityException("Download exceeds maximum allowed size")
+                }
+
                 val currentTime = System.currentTimeMillis()
                 if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
                     emit(DownloadProgress(downloadedBytes, totalBytes))

@@ -263,26 +263,53 @@ class MainActivity : ComponentActivity() {
                                     }.sortedBy { it.second }
                                 }
                                 allLangs.forEach { (lang, displayName) ->
-                                    val isDownloaded = downloadedLangs.contains(lang)
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(displayName)
-                                        if (isDownloaded) {
-                                            Button(
-                                                onClick = { translationManager?.deleteLanguage(lang) },
-                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                                            ) {
-                                                Text("Delete")
+                                    key(lang) {
+                                        val isDownloaded = downloadedLangs.contains(lang)
+                                        var showDeleteDialog by remember { mutableStateOf(false) }
+
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(displayName)
+                                            if (isDownloaded) {
+                                                Button(
+                                                    onClick = { showDeleteDialog = true },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                                ) {
+                                                    Text("Delete")
+                                                }
+                                            } else {
+                                                Button(onClick = { translationManager?.downloadLanguage(lang) }) {
+                                                    Text("Download")
+                                                }
                                             }
-                                        } else {
-                                            Button(onClick = { translationManager?.downloadLanguage(lang) }) {
-                                                Text("Download")
-                                            }
+                                        }
+
+                                        if (showDeleteDialog) {
+                                            AlertDialog(
+                                                onDismissRequest = { showDeleteDialog = false },
+                                                title = { Text("Delete Language") },
+                                                text = { Text("Are you sure you want to delete the $displayName model?") },
+                                                confirmButton = {
+                                                    TextButton(
+                                                        onClick = {
+                                                            translationManager?.deleteLanguage(lang)
+                                                            showDeleteDialog = false
+                                                        }
+                                                    ) {
+                                                        Text("Confirm", color = MaterialTheme.colorScheme.error)
+                                                    }
+                                                },
+                                                dismissButton = {
+                                                    TextButton(onClick = { showDeleteDialog = false }) {
+                                                        Text("Cancel")
+                                                    }
+                                                }
+                                            )
                                         }
                                     }
                                 }

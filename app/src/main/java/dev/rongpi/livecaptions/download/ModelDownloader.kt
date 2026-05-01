@@ -24,7 +24,7 @@ open class ModelDownloader {
         }
 
         val targetDir = File(context.filesDir, targetDirName)
-        if (!targetDir.canonicalPath.startsWith(context.filesDir.canonicalPath)) {
+        if (!targetDir.canonicalPath.startsWith(context.filesDir.canonicalPath + File.separator) && targetDir.canonicalPath != context.filesDir.canonicalPath) {
             throw SecurityException("Invalid target directory name: prevents path traversal.")
         }
 
@@ -107,7 +107,7 @@ open class ModelDownloader {
         }
 
         val targetFile = File(context.filesDir, targetFileName)
-        if (!targetFile.canonicalPath.startsWith(context.filesDir.canonicalPath)) {
+        if (!targetFile.canonicalPath.startsWith(context.filesDir.canonicalPath + File.separator)) {
             throw SecurityException("Invalid target file name: prevents path traversal.")
         }
 

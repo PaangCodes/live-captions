@@ -11,3 +11,10 @@
 ## 2024-05-18 - [Unmemoized Locale Instantiation in High-Frequency Recomposition]
 **Learning:** Instantiating `java.util.Locale(lang)` inside a Jetpack Compose layout (e.g., `MainActivity.kt` ML Kit Language list) without memoization (`remember`) causes severe performance overhead. When a parent component observes a high-frequency `StateFlow` (like `DownloadProgress`), every rapid UI update triggers a full recomposition, resulting in hundreds of redundant object allocations and string formatting operations per second, leading to UI jank and GC pressure.
 **Action:** Always memoize expensive operations (like `Locale` instantiation, list sorting, and string formatting) using `remember` when rendering lists of localizable strings in Compose, especially if parent components observe fast-updating states.
+## 2026-05-02 - [Extract High-Frequency State Reads in Compose]
+**Learning:** Collecting high-frequency state updates (like an STT download progress emitting every 100ms) at the root of a complex layout (like a Scaffold with long lists) causes constant recomposition of the entire screen, leading to severe CPU churn and UI jank.
+**Action:** Isolate state reads (e.g., `collectAsState()`) by pushing them down into small, dedicated child Composables. This restricts recomposition strictly to the UI elements that actually display the changing state.
+
+## 2026-05-02 - [O(1) Set Lookups in Compose Lists]
+**Learning:** Calling `List.contains()` inside a Compose list rendering loop creates an O(N) lookup for every item, resulting in an O(N^2) render operation that hurts performance as lists grow.
+**Action:** Always convert reference lists to a `Set` within a `remember` block before iterating over the UI list, turning membership checks into fast O(1) operations.

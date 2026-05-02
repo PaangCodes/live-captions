@@ -22,6 +22,8 @@ import androidx.compose.ui.semantics.Role
 import android.content.ServiceConnection
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import android.os.IBinder
 import android.Manifest
@@ -318,13 +320,24 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        Button(onClick = { startLiveCaptions() }, modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { startLiveCaptions() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
                             Text(text = "Start Live Captions")
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Button(onClick = { stopLiveCaptions() }, modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { stopLiveCaptions() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
                             Text(text = "Stop Live Captions")
                         }
 

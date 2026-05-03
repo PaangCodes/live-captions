@@ -52,13 +52,19 @@ open class ModelDownloader {
                 var downloadedBytes = 0L
                 var len: Int
                 var lastEmitTime = 0L
+                var bytesSinceLastCheck = 0L
                 while (inputStream.read(buffer).also { len = it } > 0) {
                     fos.write(buffer, 0, len)
                     downloadedBytes += len
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
-                        emit(DownloadProgress(downloadedBytes, totalBytes))
-                        lastEmitTime = currentTime
+                    bytesSinceLastCheck += len
+
+                    if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                            emit(DownloadProgress(downloadedBytes, totalBytes))
+                            lastEmitTime = currentTime
+                        }
+                        bytesSinceLastCheck = 0L
                     }
                 }
             }
@@ -152,19 +158,24 @@ open class ModelDownloader {
             var downloadedBytes = 0L
             var len: Int
             var lastEmitTime = 0L
+            var bytesSinceLastCheck = 0L
             while (inputStream.read(buffer).also { len = it } > 0) {
                 fos.write(buffer, 0, len)
                 downloadedBytes += len
+                bytesSinceLastCheck += len
 
                 if (downloadedBytes > maxDownloadBytes) {
                     targetFile.delete() // clean up partial file
                     throw SecurityException("Download exceeds maximum allowed size")
                 }
 
-                val currentTime = System.currentTimeMillis()
-                if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
-                    emit(DownloadProgress(downloadedBytes, totalBytes))
-                    lastEmitTime = currentTime
+                if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                        emit(DownloadProgress(downloadedBytes, totalBytes))
+                        lastEmitTime = currentTime
+                    }
+                    bytesSinceLastCheck = 0L
                 }
             }
         }

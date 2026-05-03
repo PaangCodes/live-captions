@@ -126,7 +126,8 @@ class MainActivity : ComponentActivity() {
             var sourceLang by remember { mutableStateOf(TranslateLanguage.ENGLISH) }
             var targetLang by remember { mutableStateOf(TranslateLanguage.SPANISH) }
 
-            val sttState by sttEngine.value.state.collectAsState()
+            val currentEngine by sttEngine.collectAsState()
+            val sttState by currentEngine.state.collectAsState()
             val transState = translationManager?.state?.collectAsState()
             val downloadedLangs = translationManager?.downloadedLanguages?.collectAsState(initial = emptyList())?.value ?: emptyList()
 
@@ -198,7 +199,24 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("State: ${sttState.javaClass.simpleName}")
+
+                                val (sttStatusText, sttStatusColor) = when (sttState) {
+                                    is SttState.Uninitialized -> "Uninitialized" to MaterialTheme.colorScheme.onSurfaceVariant
+                                    is SttState.Initializing -> "Initializing Engine..." to MaterialTheme.colorScheme.onSurfaceVariant
+                                    is SttState.Downloading -> "Downloading Model..." to MaterialTheme.colorScheme.primary
+                                    is SttState.Ready -> "Ready" to MaterialTheme.colorScheme.primary
+                                    is SttState.Listening -> "Listening" to MaterialTheme.colorScheme.primary
+                                    is SttState.Error -> "Error: ${(sttState as SttState.Error).message}" to MaterialTheme.colorScheme.error
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Status: ", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        text = sttStatusText,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = sttStatusColor,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                                    )
+                                }
 
                                 if (sttState is SttState.Downloading) {
                                     val dl = sttState as SttState.Downloading
@@ -247,7 +265,24 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("State: ${transState?.value?.javaClass?.simpleName}")
+
+                                val (transStatusText, transStatusColor) = when (transState?.value) {
+                                    is TranslationState.Idle -> "Idle" to MaterialTheme.colorScheme.onSurfaceVariant
+                                    is TranslationState.DownloadingModel -> "Downloading Language Model..." to MaterialTheme.colorScheme.primary
+                                    is TranslationState.Downloading -> "Downloading..." to MaterialTheme.colorScheme.primary
+                                    is TranslationState.Ready -> "Ready" to MaterialTheme.colorScheme.primary
+                                    is TranslationState.Error -> "Error" to MaterialTheme.colorScheme.error
+                                    else -> "Unknown" to MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Status: ", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        text = transStatusText,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = transStatusColor,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                                    )
+                                }
                             }
                         }
 

@@ -15,3 +15,7 @@
 ## 2024-05-26 - Action buttons missing visual affordance
 **Learning:** Primary call-to-action buttons (like "Start" or "Stop") without icons can lack visual distinctiveness and fail to convey their purpose as quickly as those with accompanying icons.
 **Action:** Always add standard icons (e.g., `PlayArrow`, `Stop`/`Close`) to primary action buttons and consider semantic coloring (e.g., error color for stop/destructive actions) to improve at-a-glance recognition and usability.
+
+## 2024-05-27 - Map internal sealed class names to user-friendly text in UI
+**Learning:** Exposing internal development class names (like `SttState.Downloading` via `javaClass.simpleName`) directly in the UI creates a jarring user experience. Users need clear, actionable, and localized text instead of technical jargon.
+**Action:** Always map internal state definitions (like Sealed Classes) into user-friendly localized text, and optionally apply semantic text styling (e.g., `primary` color for ready states, `error` color for failure states, `onSurfaceVariant` for idle states) to improve the clarity of system status indicators.

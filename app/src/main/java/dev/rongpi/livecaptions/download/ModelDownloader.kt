@@ -44,6 +44,7 @@ open class ModelDownloader {
         }
 
         val tempZipFile = File(context.filesDir, "$targetDirName.zip")
+        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
         try {
             // 1. Download to temporary zip file, tracking accurate compressed bytes.
@@ -65,6 +66,15 @@ open class ModelDownloader {
                             lastEmitTime = currentTime
                         }
                         bytesSinceLastCheck = 0L
+
+                    if (downloadedBytes > maxDownloadBytes) {
+                        throw SecurityException("Download exceeds maximum allowed size")
+                    }
+
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                        emit(DownloadProgress(downloadedBytes, totalBytes))
+                        lastEmitTime = currentTime
                     }
                 }
             }
@@ -170,6 +180,21 @@ open class ModelDownloader {
                 }
 
                 if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
+        var success = false
+        try {
+            FileOutputStream(targetFile).use { fos ->
+                val buffer = ByteArray(8192)
+                var downloadedBytes = 0L
+                var len: Int
+                var lastEmitTime = 0L
+                while (inputStream.read(buffer).also { len = it } > 0) {
+                    fos.write(buffer, 0, len)
+                    downloadedBytes += len
+
+                    if (downloadedBytes > maxDownloadBytes) {
+                        throw SecurityException("Download exceeds maximum allowed size")
+                    }
+
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
                         emit(DownloadProgress(downloadedBytes, totalBytes))
@@ -177,6 +202,11 @@ open class ModelDownloader {
                     }
                     bytesSinceLastCheck = 0L
                 }
+            }
+            success = true
+        } finally {
+            if (!success && targetFile.exists()) {
+                targetFile.delete()
             }
         }
     }.flowOn(Dispatchers.IO)

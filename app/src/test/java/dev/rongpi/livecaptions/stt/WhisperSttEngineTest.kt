@@ -1,11 +1,8 @@
 package dev.rongpi.livecaptions.stt
 
 import android.content.Context
-import dev.rongpi.livecaptions.stt.vosk.VoskSttEngine
-import dev.rongpi.livecaptions.download.ModelDownloader
+import dev.rongpi.livecaptions.stt.whisper.WhisperSttEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -23,13 +20,14 @@ import org.mockito.Mockito.mock
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class VoskSttEngineTest {
+class WhisperSttEngineTest {
 
-    private lateinit var sttEngine: VoskSttEngine
+    private lateinit var sttEngine: WhisperSttEngine
     private lateinit var testScope: TestScope
     private lateinit var fakeDownloader: FakeModelDownloader
     private lateinit var mockContext: Context
     private lateinit var mockConfig: SttConfig
+    private lateinit var tempDir: File
 
     @Before
     fun setup() {
@@ -38,9 +36,7 @@ class VoskSttEngineTest {
         fakeDownloader = FakeModelDownloader()
         mockContext = mock(Context::class.java)
 
-        // Java IO File gets very angry if we mock the root File.
-        // Let's create a real temporary directory for testing instead of mocking Context.filesDir
-        val tempDir = File.createTempFile("test", "dir")
+        tempDir = File.createTempFile("whisper_test", "dir")
         tempDir.delete()
         tempDir.mkdir()
         tempDir.deleteOnExit()
@@ -49,7 +45,7 @@ class VoskSttEngineTest {
 
         mockConfig = SttConfig(context = mockContext, modelPath = "test", sampleRate = 16000)
 
-        sttEngine = VoskSttEngine(coroutineScope = testScope, modelDownloader = fakeDownloader)
+        sttEngine = WhisperSttEngine(coroutineScope = testScope, modelDownloader = fakeDownloader)
     }
 
     @Test
@@ -58,12 +54,36 @@ class VoskSttEngineTest {
     }
 
     @Test
-    fun `initialize logic runs and transitions state to Ready using fake downloader`() = testScope.runTest {
+    fun `initialize logic runs and transitions state to Ready when model does not exist`() = testScope.runTest {
         sttEngine.initialize(mockConfig)
 
         advanceUntilIdle()
 
         assertEquals(SttState.Ready, sttEngine.state.value)
+    }
+
+    @Test
+    fun `initialize transitions state to Ready immediately when model exists`() = testScope.runTest {
+        val modelFile = File(tempDir, "ggml-tiny.en.bin")
+        modelFile.createNewFile()
+
+        sttEngine.initialize(mockConfig)
+
+        advanceUntilIdle()
+
+        assertEquals(SttState.Ready, sttEngine.state.value)
+    }
+
+    @Test
+    fun `initialize transitions state to Error when download fails`() = testScope.runTest {
+        fakeDownloader.shouldThrow = true
+
+        sttEngine.initialize(mockConfig)
+
+        advanceUntilIdle()
+
+        assertTrue(sttEngine.state.value is SttState.Error)
+        assertEquals("Failed to initialize Whisper model", (sttEngine.state.value as SttState.Error).message)
     }
 
     @Test
@@ -101,6 +121,6 @@ class VoskSttEngineTest {
 
         job.join()
         assertEquals(1, results.size)
-        assertTrue(results[0].startsWith("Vosk partial"))
+        assertTrue(results[0].startsWith("Whisper partial"))
     }
 }

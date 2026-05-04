@@ -73,7 +73,7 @@ class OverlayManager(private val context: Context) {
             setViewTreeSavedStateRegistryOwner(lifecycleOwner)
 
             setContent {
-                val text by textFlow.collectAsState(initial = "")
+                val textState = textFlow.collectAsState(initial = "")
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -81,7 +81,7 @@ class OverlayManager(private val context: Context) {
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = text,
+                        text = textState.value,
                         color = Color.White,
                         fontSize = 18.sp
                     )

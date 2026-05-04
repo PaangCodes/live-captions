@@ -19,3 +19,7 @@
 ## 2024-05-27 - Map internal sealed class names to user-friendly text in UI
 **Learning:** Exposing internal development class names (like `SttState.Downloading` via `javaClass.simpleName`) directly in the UI creates a jarring user experience. Users need clear, actionable, and localized text instead of technical jargon.
 **Action:** Always map internal state definitions (like Sealed Classes) into user-friendly localized text, and optionally apply semantic text styling (e.g., `primary` color for ready states, `error` color for failure states, `onSurfaceVariant` for idle states) to improve the clarity of system status indicators.
+
+## 2024-05-28 - Safely deriving action button availability
+**Learning:** Deriving action button `enabled` properties directly from asynchronous state variables can introduce critical UI blocking bugs if nullability (e.g., optional features) or intermediate system states (e.g., loading, errors) are not fully accounted for.
+**Action:** When deriving enabled states for complex processes, explicitly handle null cases for optional state variables (e.g., `transState == null || transState.value is Ready`), and ensure cancellation/stop buttons are enabled across all active intermediate or error states to prevent users from being trapped.

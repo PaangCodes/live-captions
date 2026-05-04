@@ -49,7 +49,7 @@ class WhisperSttEngine(
                     }
                     _state.value = SttState.Ready
                 } catch (e: Exception) {
-                    Log.e("WhisperSttEngine", "Exception initializing Whisper model", e)
+                    e.printStackTrace()
                     _state.value = SttState.Error("Failed to initialize Whisper model")
                 }
             } else {

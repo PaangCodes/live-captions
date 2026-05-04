@@ -18,3 +18,8 @@
 **Vulnerability:** The application was downloading intermediate zip files and regular files to the device storage without enforcing size limits during the download process itself, only checking constraints later during extraction. Furthermore, file cleanup on failure wasn't guaranteed by `finally` blocks for regular file downloads.
 **Learning:** A malicious actor could provide a URL to a never-ending stream, bypassing later extraction constraints and exhausting device storage before extraction even begins (Denial of Service).
 **Prevention:** Always enforce strict maximum byte size limits in the inner read loop when pulling down external network streams to disk, throwing an exception if the limit is breached. Additionally, always wrap file output streams in a `try...finally` block with a `success` flag to ensure partial or corrupted downloads are reliably deleted if any network failure, timeout, or security exception occurs during the download.
+
+## 2024-05-24 - [Critical URL Validation Bypass in File Downloads]
+**Vulnerability:** The URL scheme and host checks in `ModelDownloader` could be bypassed using query parameters (e.g., `http://evil.com/model.bin?localhost`). `String.contains()` was used to check for the localhost bypass.
+**Learning:** Checking string components manually using `contains()` instead of actually parsing the URL string leaves the application open to manipulation and bypasses.
+**Prevention:** Always use `java.net.URL` or `java.net.URI` when evaluating URLs for network connections to properly separate protocol, host, and path elements, rather than performing simple string operations.

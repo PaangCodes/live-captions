@@ -62,6 +62,17 @@ class ModelDownloaderTest {
     }
 
     @Test
+    fun `downloadFile prevents bypass of HTTPS check`() = runTest {
+        val url = "http://evil.com/model.bin?localhost"
+        try {
+            downloader.downloadFile(mockContext, url, "model.bin").toList()
+            assert(false) { "Should throw SecurityException" }
+        } catch (e: SecurityException) {
+            assertTrue(e.message?.contains("Insecure HTTP connections") == true)
+        }
+    }
+
+    @Test
     fun `downloadFile prevents path traversal`() = runTest {
         val url = "https://example.com/model.bin"
         try {
@@ -75,6 +86,17 @@ class ModelDownloaderTest {
     @Test
     fun `downloadAndExtractZip enforces HTTPS`() = runTest {
         val url = "http://example.com/model.zip"
+        try {
+            downloader.downloadAndExtractZip(mockContext, url, "model_dir").toList()
+            assert(false) { "Should throw SecurityException" }
+        } catch (e: SecurityException) {
+            assertTrue(e.message?.contains("Insecure HTTP connections") == true)
+        }
+    }
+
+    @Test
+    fun `downloadAndExtractZip prevents bypass of HTTPS check`() = runTest {
+        val url = "http://evil.com/model.zip?127.0.0.1"
         try {
             downloader.downloadAndExtractZip(mockContext, url, "model_dir").toList()
             assert(false) { "Should throw SecurityException" }

@@ -13,6 +13,7 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.BufferedInputStream
 import java.util.zip.ZipInputStream
+import java.net.URL
 
 open class ModelDownloader {
     // Making this open so it can be overridden/mocked in tests if needed
@@ -34,7 +35,8 @@ open class ModelDownloader {
 
 
     open fun downloadAndExtractZip(context: Context, url: String, targetDirName: String): Flow<DownloadProgress> = flow {
-        if (!url.startsWith("https://", ignoreCase = true) && !url.contains("localhost") && !url.contains("127.0.0.1")) {
+        val parsedUrl = URL(url)
+        if (!parsedUrl.protocol.equals("https", ignoreCase = true) && parsedUrl.host != "localhost" && parsedUrl.host != "127.0.0.1") {
             throw SecurityException("Insecure HTTP connections are not allowed for downloading models.")
         }
 
@@ -146,7 +148,8 @@ open class ModelDownloader {
     }.flowOn(Dispatchers.IO)
 
     open fun downloadFile(context: Context, url: String, targetFileName: String): Flow<DownloadProgress> = flow {
-        if (!url.startsWith("https://", ignoreCase = true) && !url.contains("localhost") && !url.contains("127.0.0.1")) {
+        val parsedUrl = URL(url)
+        if (!parsedUrl.protocol.equals("https", ignoreCase = true) && parsedUrl.host != "localhost" && parsedUrl.host != "127.0.0.1") {
             throw SecurityException("Insecure HTTP connections are not allowed for downloading models.")
         }
 

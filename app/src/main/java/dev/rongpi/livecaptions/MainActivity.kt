@@ -149,7 +149,7 @@ class MainActivity : ComponentActivity() {
             val currentEngine by sttEngine.collectAsState()
 
             // ⚡ Bolt Optimization: Isolate STT state updates to a child component
-            // We read sttState inside SttConfigCard so we don't recompose the entire
+            // We read sttState inside SttConfigCard and ControlButtons so we don't recompose the entire
             // Scaffold and MainActivity layout on every fast-emitting progress update.
 
             val transState = translationManager?.state?.collectAsState()
@@ -316,32 +316,44 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        Button(
-                            onClick = { startLiveCaptions() },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
-                        ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(text = "Start Live Captions")
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { stopLiveCaptions() },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            enabled = sttState !is SttState.Uninitialized && sttState !is SttState.Ready
-                        ) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(text = "Stop Live Captions")
-                        }
+                        ControlButtons(engine = currentEngine, transState = transState)
 
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
+            }
+        }
+    }
+
+    @Composable
+    private fun ControlButtons(engine: SttEngine, transState: androidx.compose.runtime.State<TranslationState>?) {
+        // ⚡ Bolt Optimization: Isolate STT state updates to a child component
+        // By reading `sttState` inside this smaller `ControlButtons` composable, we prevent
+        // the entire parent Scaffold layout from recomposing on every fast-emitting state update.
+        val sttState by engine.state.collectAsState()
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { startLiveCaptions() },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
+            ) {
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Start Live Captions")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { stopLiveCaptions() },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                enabled = sttState !is SttState.Uninitialized && sttState !is SttState.Ready
+            ) {
+                Icon(imageVector = Icons.Default.Close, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Stop Live Captions")
             }
         }
     }

@@ -147,6 +147,7 @@ class MainActivity : ComponentActivity() {
             var targetLang by remember { mutableStateOf(TranslateLanguage.SPANISH) }
 
             val currentEngine by sttEngine.collectAsState()
+            val currentEngineState by currentEngine.state.collectAsState()
 
             // ⚡ Bolt Optimization: Isolate STT state updates to a child component
             // We read sttState inside SttConfigCard so we don't recompose the entire
@@ -319,7 +320,7 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = { startLiveCaptions() },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
+                            enabled = currentEngineState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
                         ) {
                             Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
@@ -332,7 +333,7 @@ class MainActivity : ComponentActivity() {
                             onClick = { stopLiveCaptions() },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            enabled = sttState !is SttState.Uninitialized && sttState !is SttState.Ready
+                            enabled = currentEngineState !is SttState.Uninitialized && currentEngineState !is SttState.Ready
                         ) {
                             Icon(imageVector = Icons.Default.Close, contentDescription = null)
                             Spacer(Modifier.width(8.dp))

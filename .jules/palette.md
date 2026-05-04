@@ -23,3 +23,6 @@
 ## 2024-05-28 - Safely deriving action button availability
 **Learning:** Deriving action button `enabled` properties directly from asynchronous state variables can introduce critical UI blocking bugs if nullability (e.g., optional features) or intermediate system states (e.g., loading, errors) are not fully accounted for.
 **Action:** When deriving enabled states for complex processes, explicitly handle null cases for optional state variables (e.g., `transState == null || transState.value is Ready`), and ensure cancellation/stop buttons are enabled across all active intermediate or error states to prevent users from being trapped.
+## 2024-05-29 - Caption Overlay UX Improvements
+**Learning:** Hardcoded full-width black backgrounds for overlays result in unsightly empty black boxes obstructing the screen when there is no text. Additionally, floating captions lack a cohesive feel without proper visual boundaries (like margins and rounded corners) and centered text alignment.
+**Action:** Always conditionally hide UI elements when their backing state (e.g., text content) is empty. Ensure text overlays use a `RoundedCornerShape`, appropriate padding (margins), and `TextAlign.Center` to improve readability and visual polish.

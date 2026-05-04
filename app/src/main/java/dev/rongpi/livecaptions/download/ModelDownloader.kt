@@ -48,34 +48,37 @@ open class ModelDownloader {
 
         try {
             // 1. Download to temporary zip file, tracking accurate compressed bytes.
-            FileOutputStream(tempZipFile).use { fos ->
-                val buffer = ByteArray(8192)
-                var downloadedBytes = 0L
-                var len: Int
-                var lastEmitTime = 0L
-                var bytesSinceLastCheck = 0L
-                while (inputStream.read(buffer).also { len = it } > 0) {
-                    fos.write(buffer, 0, len)
-                    downloadedBytes += len
-                    bytesSinceLastCheck += len
+            var success = false
+            try {
+                FileOutputStream(tempZipFile).use { fos ->
+                    val buffer = ByteArray(8192)
+                    var downloadedBytes = 0L
+                    var len: Int
+                    var lastEmitTime = 0L
+                    var bytesSinceLastCheck = 0L
+                    while (inputStream.read(buffer).also { len = it } > 0) {
+                        fos.write(buffer, 0, len)
+                        downloadedBytes += len
+                        bytesSinceLastCheck += len
 
-                    if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
-                        val currentTime = System.currentTimeMillis()
-                        if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
-                            emit(DownloadProgress(downloadedBytes, totalBytes))
-                            lastEmitTime = currentTime
+                        if (downloadedBytes > maxDownloadBytes) {
+                            throw SecurityException("Download exceeds maximum allowed size")
                         }
-                        bytesSinceLastCheck = 0L
 
-                    if (downloadedBytes > maxDownloadBytes) {
-                        throw SecurityException("Download exceeds maximum allowed size")
+                        if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
+                            val currentTime = System.currentTimeMillis()
+                            if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                                emit(DownloadProgress(downloadedBytes, totalBytes))
+                                lastEmitTime = currentTime
+                            }
+                            bytesSinceLastCheck = 0L
+                        }
                     }
-
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
-                        emit(DownloadProgress(downloadedBytes, totalBytes))
-                        lastEmitTime = currentTime
-                    }
+                }
+                success = true
+            } finally {
+                if (!success && tempZipFile.exists()) {
+                    tempZipFile.delete()
                 }
             }
 
@@ -112,14 +115,22 @@ open class ModelDownloader {
                             throw Exception("Failed to create directory $parent")
                         }
 
-                        FileOutputStream(newFile).use { fos ->
-                            var len: Int
-                            while (zis.read(buffer).also { len = it } > 0) {
-                                totalUncompressedBytes += len
-                                if (totalUncompressedBytes > maxUncompressedBytes) {
-                                    throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                        var fileSuccess = false
+                        try {
+                            FileOutputStream(newFile).use { fos ->
+                                var len: Int
+                                while (zis.read(buffer).also { len = it } > 0) {
+                                    totalUncompressedBytes += len
+                                    if (totalUncompressedBytes > maxUncompressedBytes) {
+                                        throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                                    }
+                                    fos.write(buffer, 0, len)
                                 }
-                                fos.write(buffer, 0, len)
+                            }
+                            fileSuccess = true
+                        } finally {
+                            if (!fileSuccess && newFile.exists()) {
+                                newFile.delete()
                             }
                         }
                     }
@@ -163,23 +174,6 @@ open class ModelDownloader {
 
         val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
-        FileOutputStream(targetFile).use { fos ->
-            val buffer = ByteArray(8192)
-            var downloadedBytes = 0L
-            var len: Int
-            var lastEmitTime = 0L
-            var bytesSinceLastCheck = 0L
-            while (inputStream.read(buffer).also { len = it } > 0) {
-                fos.write(buffer, 0, len)
-                downloadedBytes += len
-                bytesSinceLastCheck += len
-
-                if (downloadedBytes > maxDownloadBytes) {
-                    targetFile.delete() // clean up partial file
-                    throw SecurityException("Download exceeds maximum allowed size")
-                }
-
-                if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
         var success = false
         try {
             FileOutputStream(targetFile).use { fos ->
@@ -187,20 +181,24 @@ open class ModelDownloader {
                 var downloadedBytes = 0L
                 var len: Int
                 var lastEmitTime = 0L
+                var bytesSinceLastCheck = 0L
                 while (inputStream.read(buffer).also { len = it } > 0) {
                     fos.write(buffer, 0, len)
                     downloadedBytes += len
+                    bytesSinceLastCheck += len
 
                     if (downloadedBytes > maxDownloadBytes) {
                         throw SecurityException("Download exceeds maximum allowed size")
                     }
 
-                    val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
-                        emit(DownloadProgress(downloadedBytes, totalBytes))
-                        lastEmitTime = currentTime
+                    if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                            emit(DownloadProgress(downloadedBytes, totalBytes))
+                            lastEmitTime = currentTime
+                        }
+                        bytesSinceLastCheck = 0L
                     }
-                    bytesSinceLastCheck = 0L
                 }
             }
             success = true

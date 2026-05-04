@@ -12,7 +12,7 @@ open class FakeModelDownloader(
 ) : ModelDownloader() {
     override fun downloadAndExtractZip(context: Context, url: String, targetDirName: String): Flow<ModelDownloader.DownloadProgress> {
         return if (shouldThrow) {
-            flow { throw SecurityException("Download failed") }
+            flow { throw Exception("Download failed") }
         } else {
             flowOf(dummyProgress)
         }
@@ -20,7 +20,7 @@ open class FakeModelDownloader(
 
     override fun downloadFile(context: Context, url: String, targetFileName: String): Flow<ModelDownloader.DownloadProgress> {
         return if (shouldThrow) {
-            flow { throw SecurityException("Download failed") }
+            flow { throw Exception("Download failed") }
         } else {
             flowOf(dummyProgress)
         }

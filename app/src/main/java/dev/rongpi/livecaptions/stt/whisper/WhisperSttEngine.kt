@@ -40,10 +40,10 @@ class WhisperSttEngine(
         initJob = coroutineScope.launch {
             if (!modelFile.exists()) {
                 try {
-                    modelDownloader.downloadFile(
+                    modelDownloader.downloadAndExtractZip(
                         context = config.context,
                         url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en.bin",
-                        targetFileName = "ggml-tiny.en.bin"
+                        targetDirName = "whisper_models"
                     ).collect { progress ->
                         _state.value = SttState.Downloading(progress.downloadedBytes, progress.totalBytes)
                     }

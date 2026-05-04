@@ -1,6 +1,7 @@
 package dev.rongpi.livecaptions.stt
 
 import android.content.Context
+import android.util.Log
 import dev.rongpi.livecaptions.stt.whisper.WhisperSttEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
@@ -11,12 +12,15 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.mockito.MockedStatic
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.mockStatic
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -28,6 +32,7 @@ class WhisperSttEngineTest {
     private lateinit var mockContext: Context
     private lateinit var mockConfig: SttConfig
     private lateinit var tempDir: File
+    private lateinit var logMock: MockedStatic<Log>
 
     @Before
     fun setup() {
@@ -46,6 +51,15 @@ class WhisperSttEngineTest {
         mockConfig = SttConfig(context = mockContext, modelPath = "test", sampleRate = 16000)
 
         sttEngine = WhisperSttEngine(coroutineScope = testScope, modelDownloader = fakeDownloader)
+
+        logMock = mockStatic(Log::class.java)
+        logMock.`when`<Int> { Log.e(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(Throwable::class.java)) }
+            .thenReturn(0)
+    }
+
+    @After
+    fun teardown() {
+        logMock.close()
     }
 
     @Test

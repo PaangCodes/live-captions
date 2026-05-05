@@ -316,33 +316,50 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        Button(
-                            onClick = { startLiveCaptions() },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
-                        ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(text = "Start Live Captions")
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { stopLiveCaptions() },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            enabled = sttState !is SttState.Uninitialized && sttState !is SttState.Ready
-                        ) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(text = "Stop Live Captions")
-                        }
+                        ControlButtons(
+                            engine = currentEngine,
+                            transState = transState?.value,
+                            onStart = { startLiveCaptions() },
+                            onStop = { stopLiveCaptions() }
+                        )
 
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }
+        }
+    }
+
+    @Composable
+    private fun ControlButtons(
+        engine: SttEngine,
+        transState: TranslationState?,
+        onStart: () -> Unit,
+        onStop: () -> Unit
+    ) {
+        val sttState by engine.state.collectAsState()
+
+        Button(
+            onClick = onStart,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = sttState is SttState.Ready && (transState == null || transState is TranslationState.Ready)
+        ) {
+            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(text = "Start Live Captions")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = onStop,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            enabled = sttState !is SttState.Uninitialized && sttState !is SttState.Ready
+        ) {
+            Icon(imageVector = Icons.Default.Close, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(text = "Stop Live Captions")
         }
     }
 

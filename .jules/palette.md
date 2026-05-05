@@ -23,3 +23,6 @@
 ## 2024-05-28 - Safely deriving action button availability
 **Learning:** Deriving action button `enabled` properties directly from asynchronous state variables can introduce critical UI blocking bugs if nullability (e.g., optional features) or intermediate system states (e.g., loading, errors) are not fully accounted for.
 **Action:** When deriving enabled states for complex processes, explicitly handle null cases for optional state variables (e.g., `transState == null || transState.value is Ready`), and ensure cancellation/stop buttons are enabled across all active intermediate or error states to prevent users from being trapped.
+## 2024-05-24 - Overlay Empty State Visual Polish
+**Learning:** Rendering UI containers (like `Box` with background/padding) before the backing text content is populated results in ugly empty boxes that look broken.
+**Action:** Always conditionally render container UI blocks for dynamic text only when the text string is not empty. When rendering overlay text blocks, centering the text and adding standard boundary aesthetics like rounded corners significantly improve readability and polish.

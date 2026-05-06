@@ -319,7 +319,7 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = { startLiveCaptions() },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
+                            enabled = currentEngine.state.collectAsState().value is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
                         ) {
                             Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
@@ -332,7 +332,7 @@ class MainActivity : ComponentActivity() {
                             onClick = { stopLiveCaptions() },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            enabled = sttState !is SttState.Uninitialized && sttState !is SttState.Ready
+                            enabled = currentEngine.state.collectAsState().value !is SttState.Uninitialized && currentEngine.state.collectAsState().value !is SttState.Ready
                         ) {
                             Icon(imageVector = Icons.Default.Close, contentDescription = null)
                             Spacer(Modifier.width(8.dp))

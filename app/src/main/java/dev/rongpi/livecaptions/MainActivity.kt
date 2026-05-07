@@ -31,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -278,10 +280,14 @@ class MainActivity : ComponentActivity() {
                                                     onClick = { showDeleteDialog = true },
                                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                                                 ) {
+                                                    Icon(imageVector = Icons.Default.Delete, contentDescription = null)
+                                                    Spacer(Modifier.width(8.dp))
                                                     Text("Delete")
                                                 }
                                             } else {
                                                 Button(onClick = { translationManager?.downloadLanguage(lang) }) {
+                                                    Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                                                    Spacer(Modifier.width(8.dp))
                                                     Text("Download")
                                                 }
                                             }

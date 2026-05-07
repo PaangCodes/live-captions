@@ -316,33 +316,54 @@ class MainActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        Button(
-                            onClick = { startLiveCaptions() },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = currentEngine.state.collectAsState().value is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
-                        ) {
-                            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(text = "Start Live Captions")
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { stopLiveCaptions() },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            enabled = currentEngine.state.collectAsState().value !is SttState.Uninitialized && currentEngine.state.collectAsState().value !is SttState.Ready
-                        ) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(text = "Stop Live Captions")
-                        }
+                        LiveCaptionControls(
+                            engine = currentEngine,
+                            transState = transState,
+                            onStart = { startLiveCaptions() },
+                            onStop = { stopLiveCaptions() }
+                        )
 
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }
+        }
+    }
+
+    // ⚡ Bolt Optimization: Isolate STT state observation to a specific child Composable.
+    // Reading `engine.state.collectAsState()` here prevents the root layout from recomposing
+    // on every state emission. This is critical for performance since SttEngine emits high-frequency
+    // progress updates during model downloads, which otherwise causes severe UI jank.
+    @Composable
+    private fun LiveCaptionControls(
+        engine: SttEngine,
+        transState: androidx.compose.runtime.State<TranslationState>?,
+        onStart: () -> Unit,
+        onStop: () -> Unit
+    ) {
+        val sttState by engine.state.collectAsState()
+
+        Button(
+            onClick = onStart,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
+        ) {
+            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(text = "Start Live Captions")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = onStop,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            enabled = sttState !is SttState.Uninitialized && sttState !is SttState.Ready
+        ) {
+            Icon(imageVector = Icons.Default.Close, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(text = "Stop Live Captions")
         }
     }
 

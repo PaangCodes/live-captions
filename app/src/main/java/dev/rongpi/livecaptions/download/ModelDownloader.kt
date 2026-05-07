@@ -73,7 +73,7 @@ open class ModelDownloader {
                 val buffer = ByteArray(8192)
                 var downloadedBytes = 0L
                 var len: Int
-                var lastEmitTime = 0L
+                var lastEmitTime = System.currentTimeMillis()
                 var bytesSinceLastCheck = 0L
                 while (inputStream.read(buffer).also { len = it } > 0) {
                     fos.write(buffer, 0, len)
@@ -186,7 +186,7 @@ open class ModelDownloader {
                 val buffer = ByteArray(8192)
                 var downloadedBytes = 0L
                 var len: Int
-                var lastEmitTime = 0L
+                var lastEmitTime = System.currentTimeMillis()
                 var bytesSinceLastCheck = 0L
                 while (inputStream.read(buffer).also { len = it } > 0) {
                     fos.write(buffer, 0, len)

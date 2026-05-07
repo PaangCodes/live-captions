@@ -23,3 +23,7 @@
 **Vulnerability:** The URL scheme and host checks in `ModelDownloader` could be bypassed using query parameters (e.g., `http://evil.com/model.bin?localhost`). `String.contains()` was used to check for the localhost bypass.
 **Learning:** Checking string components manually using `contains()` instead of actually parsing the URL string leaves the application open to manipulation and bypasses.
 **Prevention:** Always use `java.net.URL` or `java.net.URI` when evaluating URLs for network connections to properly separate protocol, host, and path elements, rather than performing simple string operations.
+## 2024-05-24 - [Enforce Timeouts on Network Clients]
+**Vulnerability:** The OkHttpClient was initialized with default configurations, which could lead to stalled network connections hanging the application thread indefinitely when downloading large STT language models (e.g., Vosk/Whisper).
+**Learning:** Large external downloads must have explicit timeouts to prevent Denial of Service (DoS) due to resource exhaustion.
+**Prevention:** Always explicitly set `connectTimeout`, `readTimeout`, and `writeTimeout` via `OkHttpClient.Builder()` rather than using the default `OkHttpClient()` constructor.

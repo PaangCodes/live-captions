@@ -27,3 +27,7 @@
 ## 2024-05-30 - Prevent rendering empty overlays
 **Learning:** Rendering overlay boxes when the backing state (e.g., text content) is empty results in unsightly blank rectangles on the screen, degrading the user experience.
 **Action:** Always conditionally hide UI elements like text overlays when their content is empty, and enhance them with visual boundaries like rounded corners, appropriate padding, and centered text alignment for a more polished look.
+
+## 2026-05-07 - Add visible loading states for asynchronous tasks
+**Learning:** Relying solely on text status changes (e.g., 'Initializing Engine...') during asynchronous operations can be overlooked by users, leaving them uncertain if the app is frozen or actively working.
+**Action:** Always provide clear visual feedback, such as an indeterminate `LinearProgressIndicator` or `CircularProgressIndicator`, during asynchronous operations like model downloading or initialization to reassure the user that the background task is progressing.

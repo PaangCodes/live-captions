@@ -242,6 +242,13 @@ class MainActivity : ComponentActivity() {
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                                     )
                                 }
+
+                                if (transState?.value is TranslationState.DownloadingModel) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    LinearProgressIndicator(
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
                             }
                         }
 
@@ -429,7 +436,12 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                if (sttState is SttState.Downloading) {
+                if (sttState is SttState.Initializing) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else if (sttState is SttState.Downloading) {
                     val dl = sttState as SttState.Downloading
                     val progress = if (dl.totalBytes > 0) dl.downloadedBytes.toFloat() / dl.totalBytes else 0f
                     val mbDownloaded = dl.downloadedBytes / (1024 * 1024)

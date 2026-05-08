@@ -5,3 +5,7 @@
 ## 2025-02-12 - Jetpack Compose State Flow Hoisting Anti-pattern
 **Learning:** Reading high-frequency state flow emissions (like STT model download progress `.collectAsState().value`) at the root level of a large Jetpack Compose component (e.g., inside the `setContent` root layout of `MainActivity`) causes severe UI jank. This is because every state emission triggers a full recomposition of the large root layout and all its non-memoized children.
 **Action:** Always isolate high-frequency state reads into the lowest possible child `@Composable` functions (e.g., isolating `Start`/`Stop` buttons into their own `LiveCaptionControls` composable). This ensures only that specific small sub-tree recomposes when the state changes.
+
+## $(date +%Y-%m-%d) - Reduce System.currentTimeMillis Overhead
+**Learning:** Initializing the tracking timestamp (`lastEmitTime`) to 0 instead of the current system time in a throttling logic bypasses rate limiting for the very first event, executing it instantly.
+**Action:** When implementing time-throttling in high-frequency loops (like download progress), always initialize `lastEmitTime = System.currentTimeMillis()`.

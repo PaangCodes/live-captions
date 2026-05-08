@@ -155,12 +155,7 @@ class MainActivity : ComponentActivity() {
             // Scaffold and MainActivity layout on every fast-emitting progress update.
 
             val transState = translationManager?.state?.collectAsState()
-            val downloadedLangs = translationManager?.downloadedLanguages?.collectAsState(initial = emptyList())?.value ?: emptyList()
-
-            // ⚡ Bolt Optimization: Convert downloaded languages list to a Set
-            // This turns O(N) list lookups inside the UI rendering loop into fast O(1) set lookups,
-            // avoiding O(N^2) complexity as the number of languages grows.
-            val downloadedLangsSet = remember(downloadedLangs) { downloadedLangs.toSet() }
+            val downloadedLangs = translationManager?.downloadedLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
 
             MaterialTheme {
                 Scaffold(
@@ -271,7 +266,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 allLangs.forEach { (lang, displayName) ->
                                     key(lang) {
-                                        val isDownloaded = downloadedLangsSet.contains(lang)
+                                        val isDownloaded = downloadedLangs.contains(lang)
                                         var showDeleteDialog by remember { mutableStateOf(false) }
 
                                         Row(

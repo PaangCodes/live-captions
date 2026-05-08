@@ -9,3 +9,7 @@
 ## $(date +%Y-%m-%d) - Reduce System.currentTimeMillis Overhead
 **Learning:** Initializing the tracking timestamp (`lastEmitTime`) to 0 instead of the current system time in a throttling logic bypasses rate limiting for the very first event, executing it instantly.
 **Action:** When implementing time-throttling in high-frequency loops (like download progress), always initialize `lastEmitTime = System.currentTimeMillis()`.
+
+## 2025-02-12 - OkHttpClient Instance Sharing
+**Learning:** Instantiating a new `OkHttpClient` per network request creates redundant connection pools and thread pools, which significantly increases memory overhead and connection latency.
+**Action:** Always share a single, lazily initialized `OkHttpClient` instance across the application or module (e.g., using a `companion object` and `lazy` delegate) to reuse connection resources efficiently.

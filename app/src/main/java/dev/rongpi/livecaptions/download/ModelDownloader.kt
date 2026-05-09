@@ -16,25 +16,34 @@ import java.util.zip.ZipInputStream
 import java.net.URL
 
 open class ModelDownloader {
+    companion object {
+        // ⚡ Bolt Optimization: Shared OkHttpClient instance
+        // Instantiating a new OkHttpClient per request creates redundant connection and
+        // thread pools, wasting resources. Using a single lazily initialized client reduces
+        // connection latency and memory overhead.
+        private val sharedClient: OkHttpClient by lazy {
+            OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+        }
+    }
+    // Shared OkHttpClient instance to prevent resource exhaustion and connection latency
+    protected val client: OkHttpClient by lazy { createClient() }
+
     // Making this open so it can be overridden/mocked in tests if needed
-    open fun createClient(): OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .build()
+    open fun createClient(): OkHttpClient = sharedClient
 
     data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long)
 
     // A helper to make executing requests mockable or easier to intercept
     open fun executeRequest(url: String): okhttp3.Response {
-        val request = Request.Builder().url(url.replace("https://", "http://")).build() // In tests mockWebServer is HTTP
         // In reality we should probably inject OkHttpClient or have an interceptor for tests,
         // but for now we'll rely on the MockWebServer and a slight URL tweak for tests if needed,
         // or just let OkHttp handle the test URL.
-
-        // Actually, to make it clean, let's inject a client or use a protected one
         val requestReal = Request.Builder().url(url).build()
-        return createClient().newCall(requestReal).execute()
+        return client.newCall(requestReal).execute()
     }
 
 
@@ -50,7 +59,7 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        val response = createClient().newCall(request).execute()
+        val response = client.newCall(request).execute()
 
         if (!response.isSuccessful) {
             throw Exception("Failed to download file: ${response.code}")
@@ -163,7 +172,7 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        val response = createClient().newCall(request).execute()
+        val response = client.newCall(request).execute()
 
         if (!response.isSuccessful) {
             throw Exception("Failed to download file: ${response.code}")

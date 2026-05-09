@@ -27,3 +27,11 @@
 **Vulnerability:** The OkHttpClient was initialized with default configurations, which could lead to stalled network connections hanging the application thread indefinitely when downloading large STT language models (e.g., Vosk/Whisper).
 **Learning:** Large external downloads must have explicit timeouts to prevent Denial of Service (DoS) due to resource exhaustion.
 **Prevention:** Always explicitly set `connectTimeout`, `readTimeout`, and `writeTimeout` via `OkHttpClient.Builder()` rather than using the default `OkHttpClient()` constructor.
+## 2024-05-24 - [Replace printStackTrace with secure logging]
+**Vulnerability:** The application was using `e.printStackTrace()` in `WhisperSttEngine.kt`'s initialization catch block.
+**Learning:** `printStackTrace()` writes directly to standard error, which is considered insecure as it can leak sensitive system or application structural information (stack traces) to logs or users unintentionally.
+**Prevention:** Always use proper secure logging frameworks (like Android's `Log.e`) to handle exceptions securely without leaking stack trace information directly to system output streams.
+## 2024-05-24 - [Avoid e.printStackTrace() and Share OkHttpClient Instances]
+**Vulnerability:** The application was printing raw exceptions using `e.printStackTrace()` in `WhisperSttEngine.kt`, potentially leaking internal details. Furthermore, `OkHttpClient` was being re-instantiated for every request in `ModelDownloader.kt`, which can lead to connection leaks and resource exhaustion (DoS vulnerability).
+**Learning:** Raw stack traces must not be exposed carelessly. In Android, `System.err` outputs from `printStackTrace()` bypass proper logging mechanisms. Additionally, `OkHttpClient` instances create expensive thread and connection pools that must be shared to prevent application crashes under load.
+**Prevention:** Always use proper system logging mechanisms like `Log.e(TAG, message, e)` to handle exceptions securely without leaking details to raw standard error. For OkHttpClient, define shared instances using `by lazy { createClient() }` to reuse the underlying connection pools across requests.

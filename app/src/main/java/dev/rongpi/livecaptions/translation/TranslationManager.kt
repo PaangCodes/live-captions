@@ -33,8 +33,8 @@ class TranslationManager(
     private val _translatedText = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val translatedText: SharedFlow<String> = _translatedText.asSharedFlow()
 
-    private val _downloadedLanguages = MutableStateFlow<List<String>>(emptyList())
-    val downloadedLanguages: StateFlow<List<String>> = _downloadedLanguages.asStateFlow()
+    private val _downloadedLanguages = MutableStateFlow<Set<String>>(emptySet())
+    val downloadedLanguages: StateFlow<Set<String>> = _downloadedLanguages.asStateFlow()
 
     private val _downloadingLanguages = MutableStateFlow<Set<String>>(emptySet())
     val downloadingLanguages: StateFlow<Set<String>> = _downloadingLanguages.asStateFlow()
@@ -51,7 +51,7 @@ class TranslationManager(
         coroutineScope.launch {
             try {
                 val models = modelManager.getDownloadedModels(TranslateRemoteModel::class.java).await()
-                _downloadedLanguages.value = models.map { it.language }
+                _downloadedLanguages.value = models.map { it.language }.toSet()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to get downloaded models", e)
             }

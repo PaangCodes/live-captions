@@ -47,6 +47,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -155,7 +157,13 @@ class MainActivity : ComponentActivity() {
             // Scaffold and MainActivity layout on every fast-emitting progress update.
 
             val transState = translationManager?.state?.collectAsState()
-            val downloadedLangs = translationManager?.downloadedLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
+            val downloadedLangs = translationManager?.downloadedLanguages?.collectAsState(initial = emptyList())?.value ?: emptyList()
+            val downloadingLangs = translationManager?.downloadingLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
+
+            // ⚡ Bolt Optimization: Convert downloaded languages list to a Set
+            // This turns O(N) list lookups inside the UI rendering loop into fast O(1) set lookups,
+            // avoiding O(N^2) complexity as the number of languages grows.
+            val downloadedLangsSet = remember(downloadedLangs) { downloadedLangs.toSet() }
 
             MaterialTheme {
                 Scaffold(
@@ -266,7 +274,8 @@ class MainActivity : ComponentActivity() {
                                 }
                                 allLangs.forEach { (lang, displayName) ->
                                     key(lang) {
-                                        val isDownloaded = downloadedLangs.contains(lang)
+                                        val isDownloaded = downloadedLangsSet.contains(lang)
+                                        val isDownloading = downloadingLangs.contains(lang)
                                         var showDeleteDialog by remember { mutableStateOf(false) }
 
                                         Row(
@@ -285,6 +294,15 @@ class MainActivity : ComponentActivity() {
                                                     Icon(imageVector = Icons.Default.Delete, contentDescription = null)
                                                     Spacer(Modifier.width(8.dp))
                                                     Text("Delete")
+                                                }
+                                            } else if (isDownloading) {
+                                                Button(onClick = { }, enabled = false) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(16.dp),
+                                                        strokeWidth = 2.dp
+                                                    )
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text("Downloading...")
                                                 }
                                             } else {
                                                 Button(onClick = { translationManager?.downloadLanguage(lang) }) {

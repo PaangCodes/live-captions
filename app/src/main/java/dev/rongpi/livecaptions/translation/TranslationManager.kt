@@ -36,6 +36,9 @@ class TranslationManager(
     private val _downloadedLanguages = MutableStateFlow<Set<String>>(emptySet())
     val downloadedLanguages: StateFlow<Set<String>> = _downloadedLanguages.asStateFlow()
 
+    private val _downloadingLanguages = MutableStateFlow<Set<String>>(emptySet())
+    val downloadingLanguages: StateFlow<Set<String>> = _downloadingLanguages.asStateFlow()
+
     private var translator: Translator? = null
     private var translateJob: Job? = null
     private val modelManager = RemoteModelManager.getInstance()
@@ -57,6 +60,7 @@ class TranslationManager(
 
     fun downloadLanguage(language: String) {
         coroutineScope.launch {
+            _downloadingLanguages.value = _downloadingLanguages.value + language
             try {
                 val model = TranslateRemoteModel.Builder(language).build()
                 val conditions = DownloadConditions.Builder().build()
@@ -64,6 +68,8 @@ class TranslationManager(
                 refreshDownloadedLanguages()
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to download language model $language", e)
+            } finally {
+                _downloadingLanguages.value = _downloadingLanguages.value - language
             }
         }
     }

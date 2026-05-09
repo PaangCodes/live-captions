@@ -31,3 +31,7 @@
 ## 2026-05-07 - Add visible loading states for asynchronous tasks
 **Learning:** Relying solely on text status changes (e.g., 'Initializing Engine...') during asynchronous operations can be overlooked by users, leaving them uncertain if the app is frozen or actively working.
 **Action:** Always provide clear visual feedback, such as an indeterminate `LinearProgressIndicator` or `CircularProgressIndicator`, during asynchronous operations like model downloading or initialization to reassure the user that the background task is progressing.
+
+## 2024-05-31 - Add visual loading states for ML Kit model downloads
+**Learning:** Translating language models requires a large download and might take several seconds or minutes. Without explicit visual affordance per item (e.g. a disabled downloading button), users can unknowingly trigger multiple simultaneous downloads or assume the app froze.
+**Action:** Always provide explicit visual loading feedback (like a `CircularProgressIndicator` on the button) coupled with a disabled state for long-running item-level downloads, like ML Kit models.

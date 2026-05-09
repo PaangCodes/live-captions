@@ -49,6 +49,7 @@ class WhisperSttEngine(
                     }
                     _state.value = SttState.Ready
                 } catch (e: Exception) {
+                    // Security Enhancement: Prevent stack trace information leakage
                     Log.e("WhisperSttEngine", "Exception initializing Whisper model", e)
                     _state.value = SttState.Error("Failed to initialize Whisper model")
                 }

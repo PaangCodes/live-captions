@@ -16,15 +16,24 @@ import java.util.zip.ZipInputStream
 import java.net.URL
 
 open class ModelDownloader {
+    companion object {
+        // ⚡ Bolt Optimization: Shared OkHttpClient instance
+        // Instantiating a new OkHttpClient per request creates redundant connection and
+        // thread pools, wasting resources. Using a single lazily initialized client reduces
+        // connection latency and memory overhead.
+        private val sharedClient: OkHttpClient by lazy {
+            OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+        }
+    }
     // Shared OkHttpClient instance to prevent resource exhaustion and connection latency
     protected val client: OkHttpClient by lazy { createClient() }
 
     // Making this open so it can be overridden/mocked in tests if needed
-    open fun createClient(): OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-        .build()
+    open fun createClient(): OkHttpClient = sharedClient
 
     data class DownloadProgress(val downloadedBytes: Long, val totalBytes: Long)
 

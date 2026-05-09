@@ -9,6 +9,10 @@
 ## $(date +%Y-%m-%d) - Reduce System.currentTimeMillis Overhead
 **Learning:** Initializing the tracking timestamp (`lastEmitTime`) to 0 instead of the current system time in a throttling logic bypasses rate limiting for the very first event, executing it instantly.
 **Action:** When implementing time-throttling in high-frequency loops (like download progress), always initialize `lastEmitTime = System.currentTimeMillis()`.
+
+## 2025-02-12 - OkHttpClient Instance Sharing
+**Learning:** Instantiating a new `OkHttpClient` per network request creates redundant connection pools and thread pools, which significantly increases memory overhead and connection latency.
+**Action:** Always share a single, lazily initialized `OkHttpClient` instance across the application or module (e.g., using a `companion object` and `lazy` delegate) to reuse connection resources efficiently.
 ## 2026-05-08 - O(1) Membership lookups for Compose List Rendering
  **Learning:** When a UI layer renders a dynamic list that requires verifying if each item exists within a collection of known states (e.g. checking if a language is downloaded out of an entire list of available languages), passing that collection down from the StateHolder as a `List` creates an O(N^2) scaling problem during rendering.
  **Action:** Instead of exposing `StateFlow<List<T>>` from the viewmodel/manager and locally converting it inside `remember { list.toSet() }` in Jetpack Compose, the backend StateHolder should inherently maintain and expose the collection as a `Set` (e.g. `StateFlow<Set<T>>`). This achieves O(1) lookups during recomposition directly, eliminating redundant transformation overhead and making list scaling efficient.

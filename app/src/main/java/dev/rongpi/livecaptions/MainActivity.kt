@@ -403,29 +403,48 @@ class MainActivity : ComponentActivity() {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Speech-to-Text Settings", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                Row {
+                Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.selectable(
-                            selected = selectedStt == "Vosk",
-                            onClick = { onSttSelected("Vosk") },
-                            role = Role.RadioButton
-                        )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = selectedStt == "Vosk",
+                                onClick = { onSttSelected("Vosk") },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 8.dp)
                     ) {
                         RadioButton(selected = selectedStt == "Vosk", onClick = null)
-                        Text("Vosk", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                        Column(modifier = Modifier.padding(start = 4.dp, end = 8.dp)) {
+                            Text("Vosk")
+                            Text(
+                                "Fast / Battery Saver",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.selectable(
-                            selected = selectedStt == "Whisper",
-                            onClick = { onSttSelected("Whisper") },
-                            role = Role.RadioButton
-                        )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = selectedStt == "Whisper",
+                                onClick = { onSttSelected("Whisper") },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 8.dp)
                     ) {
                         RadioButton(selected = selectedStt == "Whisper", onClick = null)
-                        Text("Whisper", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                        Column(modifier = Modifier.padding(start = 4.dp, end = 8.dp)) {
+                            Text("Whisper")
+                            Text(
+                                "High Accuracy / Heavy",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 

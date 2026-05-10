@@ -157,13 +157,13 @@ class MainActivity : ComponentActivity() {
             // Scaffold and MainActivity layout on every fast-emitting progress update.
 
             val transState = translationManager?.state?.collectAsState()
-            val downloadedLangs = translationManager?.downloadedLanguages?.collectAsState(initial = emptyList())?.value ?: emptyList()
-            val downloadingLangs = translationManager?.downloadingLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
 
-            // ⚡ Bolt Optimization: Convert downloaded languages list to a Set
-            // This turns O(N) list lookups inside the UI rendering loop into fast O(1) set lookups,
-            // avoiding O(N^2) complexity as the number of languages grows.
-            val downloadedLangsSet = remember(downloadedLangs) { downloadedLangs.toSet() }
+            // ⚡ Bolt Optimization: Use Set directly from StateFlow
+            // `TranslationManager.downloadedLanguages` is already exposed as a Set.
+            // Using `initial = emptySet()` and reading it directly eliminates the need
+            // to cache a redundant `toSet()` conversion in the Compose memory slot table.
+            val downloadedLangsSet = translationManager?.downloadedLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
+            val downloadingLangs = translationManager?.downloadingLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
 
             MaterialTheme {
                 Scaffold(

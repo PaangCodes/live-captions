@@ -39,3 +39,7 @@
 ## 2024-06-03 - Add helper text explaining technical trade-offs
 **Learning:** When presenting users with technical configuration options (like choosing between "Vosk" or "Whisper" STT engines), using only the technical names can be confusing and alienating for non-technical users. It forces them to guess or research the difference.
 **Action:** Always provide descriptive helper text beneath technical options that translates the underlying mechanism into clear, practical user-facing trade-offs (e.g., "Fast / Battery Saver" vs "High Accuracy / Heavy") so users can make informed decisions based on their needs.
+
+## 2024-06-04 - Dynamic explanations for disabled primary action buttons
+**Learning:** When primary action buttons (like "Start") are disabled due to asynchronous background operations (e.g., downloading or initializing models), leaving the static text unchanged creates confusion. Users may wonder why they cannot click the button and might assume the app is broken.
+**Action:** Always provide inline loading indicators (like a `CircularProgressIndicator` inside the button) and dynamically update the button text to explicitly describe the current blocking state (e.g., "Downloading STT Model...") so users understand exactly why the action is temporarily unavailable.

@@ -1,37 +1,4 @@
-## 2024-04-26 - [Improve Error Messages to Prevent Info Leakage]
-**Vulnerability:** The raw exception message (`e.message`) was being passed directly to the UI layer in `TranslationManager.kt` via `TranslationState.Error`. Translation errors were also silently swallowed.
-**Learning:** This exposes potentially sensitive internal details to the user and prevents developers from reviewing the actual exceptions causing translation failures.
-**Prevention:** Always fail securely by displaying generic, safe error messages to the UI and logging the actual exceptions using system logs (e.g., `Log.e`) for internal debugging purposes.
-## 2026-04-29 - [Secure Model Downloads]
-**Vulnerability:** The application was not enforcing HTTPS for model downloads and lacked complete path traversal protection on target file and directory names (though Zip Slip during extraction was handled).
-**Learning:** Downloading complex binary models (like Vosk or Whisper) over unencrypted HTTP exposes the application to Man-in-the-Middle attacks where a malicious actor could replace the models, leading to arbitrary code execution within the native libraries. Path traversal could also allow overwriting arbitrary files in the app's internal storage.
-**Prevention:** Always enforce HTTPS for any external asset downloads (`url.startsWith("https://")`). Pre-compute target file and directory paths and explicitly verify their `canonicalPath` against the safe base directory (`context.filesDir.canonicalPath`) to prevent directory traversal payloads.
-## 2024-05-01 - [Incomplete Path Traversal Prevention via startsWith]
-**Vulnerability:** A path traversal check using `canonicalPath.startsWith(safeDir.canonicalPath)` without an appended `File.separator` allows a maliciously crafted input like `../files_hack` to pass validation if the `safeDir` happens to be named `files` (because `/files_hack` starts with `/files`).
-**Learning:** `String.startsWith()` is insufficient for securely verifying subdirectories/files unless the path separator is explicitly included or exact string equality is checked, leading to potential arbitrary file read/write vulnerabilities.
-**Prevention:** Always append `File.separator` when using `startsWith` on canonical paths to enforce that the target is strictly inside the safe directory: `!targetPath.startsWith(safeDir + File.separator)`. Add a secondary exact match check (`targetPath != safeDir`) if the root directory itself is also an acceptable target.
-## 2024-05-01 - [Preventing Zip Bomb and Resource Exhaustion]
-**Vulnerability:** The `ModelDownloader` was extracting downloaded zip files and saving regular files without validating the maximum size or file count of the extracted contents. Additionally, temporary files were only deleted at the end of successful extraction, leading to a resource leak if the process crashed.
-**Learning:** Maliciously crafted ZIP files (Decompression Bombs/Zip Bombs) can expand to massive sizes with very few compressed bytes, rapidly exhausting device storage and causing Denial of Service (DoS) for the application or the entire device. Temporary files must be reliably cleared regardless of success or failure.
-**Prevention:** Always enforce strict constraints during ZIP extraction: set a maximum limit on uncompressed total bytes (e.g., 1 GB) and a maximum number of files (e.g., 10,000 files). Likewise, cap the maximum size for standard file downloads. Always wrap resource extraction logic in a `try...finally` block to guarantee cleanup of temporary resources (`tempZipFile.delete()`) even if exceptions occur.
-## 2024-05-02 - [Prevent Resource Exhaustion During Intermediate Downloads]
-**Vulnerability:** The application was downloading intermediate zip files and regular files to the device storage without enforcing size limits during the download process itself, only checking constraints later during extraction. Furthermore, file cleanup on failure wasn't guaranteed by `finally` blocks for regular file downloads.
-**Learning:** A malicious actor could provide a URL to a never-ending stream, bypassing later extraction constraints and exhausting device storage before extraction even begins (Denial of Service).
-**Prevention:** Always enforce strict maximum byte size limits in the inner read loop when pulling down external network streams to disk, throwing an exception if the limit is breached. Additionally, always wrap file output streams in a `try...finally` block with a `success` flag to ensure partial or corrupted downloads are reliably deleted if any network failure, timeout, or security exception occurs during the download.
-
-## 2024-05-24 - [Critical URL Validation Bypass in File Downloads]
-**Vulnerability:** The URL scheme and host checks in `ModelDownloader` could be bypassed using query parameters (e.g., `http://evil.com/model.bin?localhost`). `String.contains()` was used to check for the localhost bypass.
-**Learning:** Checking string components manually using `contains()` instead of actually parsing the URL string leaves the application open to manipulation and bypasses.
-**Prevention:** Always use `java.net.URL` or `java.net.URI` when evaluating URLs for network connections to properly separate protocol, host, and path elements, rather than performing simple string operations.
-## 2024-05-24 - [Enforce Timeouts on Network Clients]
-**Vulnerability:** The OkHttpClient was initialized with default configurations, which could lead to stalled network connections hanging the application thread indefinitely when downloading large STT language models (e.g., Vosk/Whisper).
-**Learning:** Large external downloads must have explicit timeouts to prevent Denial of Service (DoS) due to resource exhaustion.
-**Prevention:** Always explicitly set `connectTimeout`, `readTimeout`, and `writeTimeout` via `OkHttpClient.Builder()` rather than using the default `OkHttpClient()` constructor.
-## 2024-05-24 - [Replace printStackTrace with secure logging]
-**Vulnerability:** The application was using `e.printStackTrace()` in `WhisperSttEngine.kt`'s initialization catch block.
-**Learning:** `printStackTrace()` writes directly to standard error, which is considered insecure as it can leak sensitive system or application structural information (stack traces) to logs or users unintentionally.
-**Prevention:** Always use proper secure logging frameworks (like Android's `Log.e`) to handle exceptions securely without leaking stack trace information directly to system output streams.
-## 2024-05-24 - [Avoid e.printStackTrace() and Share OkHttpClient Instances]
-**Vulnerability:** The application was printing raw exceptions using `e.printStackTrace()` in `WhisperSttEngine.kt`, potentially leaking internal details. Furthermore, `OkHttpClient` was being re-instantiated for every request in `ModelDownloader.kt`, which can lead to connection leaks and resource exhaustion (DoS vulnerability).
-**Learning:** Raw stack traces must not be exposed carelessly. In Android, `System.err` outputs from `printStackTrace()` bypass proper logging mechanisms. Additionally, `OkHttpClient` instances create expensive thread and connection pools that must be shared to prevent application crashes under load.
-**Prevention:** Always use proper system logging mechanisms like `Log.e(TAG, message, e)` to handle exceptions securely without leaking details to raw standard error. For OkHttpClient, define shared instances using `by lazy { createClient() }` to reuse the underlying connection pools across requests.
+## 2024-05-10 - Disable Application Backup
+**Vulnerability:** Android application backup enabled by default.
+**Learning:** `android:allowBackup="true"` allows users to use `adb backup` to extract application data, potentially leading to unauthorized data extraction if sensitive data is stored.
+**Prevention:** Set `android:allowBackup="false"` in the `AndroidManifest.xml` unless explicitly required and carefully managed.

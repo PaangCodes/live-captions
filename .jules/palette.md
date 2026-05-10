@@ -35,3 +35,7 @@
 ## 2024-05-31 - Add visual loading states for ML Kit model downloads
 **Learning:** Translating language models requires a large download and might take several seconds or minutes. Without explicit visual affordance per item (e.g. a disabled downloading button), users can unknowingly trigger multiple simultaneous downloads or assume the app froze.
 **Action:** Always provide explicit visual loading feedback (like a `CircularProgressIndicator` on the button) coupled with a disabled state for long-running item-level downloads, like ML Kit models.
+
+## 2024-06-03 - Add helper text explaining technical trade-offs
+**Learning:** When presenting users with technical configuration options (like choosing between "Vosk" or "Whisper" STT engines), using only the technical names can be confusing and alienating for non-technical users. It forces them to guess or research the difference.
+**Action:** Always provide descriptive helper text beneath technical options that translates the underlying mechanism into clear, practical user-facing trade-offs (e.g., "Fast / Battery Saver" vs "High Accuracy / Heavy") so users can make informed decisions based on their needs.

@@ -76,6 +76,7 @@ open class ModelDownloader {
         val tempZipFile = File(context.filesDir, "$targetDirName.zip")
         val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
+        var overallSuccess = false
         try {
             // 1. Download to temporary zip file, tracking accurate compressed bytes.
             FileOutputStream(tempZipFile).use { fos ->
@@ -142,14 +143,22 @@ open class ModelDownloader {
                             throw Exception("Failed to create directory $parent")
                         }
 
-                        FileOutputStream(newFile).use { fos ->
-                            var len: Int
-                            while (zis.read(buffer).also { len = it } > 0) {
-                                totalUncompressedBytes += len
-                                if (totalUncompressedBytes > maxUncompressedBytes) {
-                                    throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                        var extractionSuccess = false
+                        try {
+                            FileOutputStream(newFile).use { fos ->
+                                var len: Int
+                                while (zis.read(buffer).also { len = it } > 0) {
+                                    totalUncompressedBytes += len
+                                    if (totalUncompressedBytes > maxUncompressedBytes) {
+                                        throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                                    }
+                                    fos.write(buffer, 0, len)
                                 }
-                                fos.write(buffer, 0, len)
+                            }
+                            extractionSuccess = true
+                        } finally {
+                            if (!extractionSuccess && newFile.exists()) {
+                                newFile.delete()
                             }
                         }
                     }
@@ -157,10 +166,14 @@ open class ModelDownloader {
                 }
                 zis.closeEntry()
             }
+            overallSuccess = true
         } finally {
             // 3. Clean up the temp zip file
             if (tempZipFile.exists()) {
                 tempZipFile.delete()
+            }
+            if (!overallSuccess && targetDir.exists()) {
+                targetDir.deleteRecursively()
             }
         }
     }.flowOn(Dispatchers.IO)

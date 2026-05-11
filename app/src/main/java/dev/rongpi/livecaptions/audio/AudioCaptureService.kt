@@ -127,8 +127,7 @@ class AudioCaptureService : Service() {
                 while (isActive) {
                     val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                     if (read > 0) {
-                        val data = buffer.copyOf(read)
-                        sttEngine?.processAudio(data)
+                        sttEngine?.processAudio(buffer, 0, read)
                     }
                 }
             }

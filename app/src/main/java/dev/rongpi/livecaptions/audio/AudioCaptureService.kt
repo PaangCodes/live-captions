@@ -127,8 +127,10 @@ class AudioCaptureService : Service() {
                 while (isActive) {
                     val read = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                     if (read > 0) {
-                        val data = buffer.copyOf(read)
-                        sttEngine?.processAudio(data)
+                        // ⚡ Bolt Optimization: Zero-allocation audio processing
+                        // Pass the array directly with offset and length instead of copying the array
+                        // to avoid massive GC pressure during high-frequency audio capture loops.
+                        sttEngine?.processAudio(buffer, 0, read)
                     }
                 }
             }

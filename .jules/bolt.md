@@ -19,3 +19,7 @@
 ## 2024-05-19 - Pre-compute Canonical Path in Zip Extraction Loop
  **Learning:** Resolving `File.canonicalPath` inside a tight loop (like extracting a zip archive) causes severe performance degradation due to redundant file system I/O.
  **Action:** Pre-computed the `targetDir.canonicalPath + File.separator` outside the `while` loop in `ModelDownloader.kt` and used the cached variable for the Zip Slip validation check inside the loop. Reduced extraction time by ~11.7% (~110ms improvement on a 5000-file mock zip).
+
+## 2025-02-12 - Eliminate GC Pressure in High-Frequency Audio Capture Loops
+**Learning:** Allocating new byte arrays (e.g., using `ByteArray.copyOf()`) inside a tight, high-frequency loop (like reading from an `AudioRecord` input stream) creates massive Garbage Collection pressure. This can cause application stuttering and dropped frames in real-time audio processing.
+**Action:** Always design and utilize interfaces that accept the pre-allocated buffer along with an `offset` and `length` (e.g., `processAudio(buffer, 0, read)`) to achieve zero-allocation data processing.

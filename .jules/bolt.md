@@ -19,3 +19,6 @@
 ## 2024-05-19 - Pre-compute Canonical Path in Zip Extraction Loop
  **Learning:** Resolving `File.canonicalPath` inside a tight loop (like extracting a zip archive) causes severe performance degradation due to redundant file system I/O.
  **Action:** Pre-computed the `targetDir.canonicalPath + File.separator` outside the `while` loop in `ModelDownloader.kt` and used the cached variable for the Zip Slip validation check inside the loop. Reduced extraction time by ~11.7% (~110ms improvement on a 5000-file mock zip).
+## $(date +%Y-%m-%d) - Eliminate ByteArray.copyOf() Allocation
+ **Learning:** In high-frequency loops like `AudioRecord` capture, constantly using `ByteArray.copyOf()` generates significant temporary memory allocations. This increases Garbage Collection (GC) overhead and can cause audio stuttering.
+ **Action:** Update processing interfaces like `processAudio(data, offset, length)` to accept the raw array slice instead of making full array copies.

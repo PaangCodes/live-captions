@@ -1,4 +1,4 @@
-## 2024-05-10 - Disable Application Backup
-**Vulnerability:** Android application backup enabled by default.
-**Learning:** `android:allowBackup="true"` allows users to use `adb backup` to extract application data, potentially leading to unauthorized data extraction if sensitive data is stored.
-**Prevention:** Set `android:allowBackup="false"` in the `AndroidManifest.xml` unless explicitly required and carefully managed.
+## 2024-05-31 - [Resource Exhaustion via Partial Zip Extraction]
+**Vulnerability:** During ZIP archive extraction, if an error occurred (such as a network failure, lack of disk space, or a Zip Bomb detection thrown as an Exception), the previously extracted files inside the target directory remained on disk without being cleared.
+**Learning:** Partially extracted archives create a potential vector for disk space exhaustion, leaving garbage files and corrupted configurations that can cause persistent app instability. A `finally` block is needed not only to close the ZipInputStream but also to ensure atomicity by destroying incomplete target directories when success isn't tracked.
+**Prevention:** Track extraction success using a boolean flag set at the very end of the `try` block. In the `finally` block, verify `!success` and invoke `deleteRecursively()` on the target directory to enforce clean rollbacks.

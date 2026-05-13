@@ -49,6 +49,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -299,7 +300,8 @@ class MainActivity : ComponentActivity() {
                                                 Button(onClick = { }, enabled = false) {
                                                     CircularProgressIndicator(
                                                         modifier = Modifier.size(16.dp),
-                                                        strokeWidth = 2.dp
+                                                        strokeWidth = 2.dp,
+                                                        color = LocalContentColor.current
                                                     )
                                                     Spacer(Modifier.width(8.dp))
                                                     Text("Downloading...")

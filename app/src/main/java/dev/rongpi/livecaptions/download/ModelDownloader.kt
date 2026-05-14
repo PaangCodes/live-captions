@@ -76,6 +76,7 @@ open class ModelDownloader {
         val tempZipFile = File(context.filesDir, "$targetDirName.zip")
         val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
+        var success = false
         try {
             // 1. Download to temporary zip file, tracking accurate compressed bytes.
             FileOutputStream(tempZipFile).use { fos ->
@@ -157,10 +158,18 @@ open class ModelDownloader {
                 }
                 zis.closeEntry()
             }
+            success = true
         } finally {
             // 3. Clean up the temp zip file
             if (tempZipFile.exists()) {
                 tempZipFile.delete()
+            }
+
+            // Security Best Practice: If extraction fails or is interrupted, delete the
+            // partially extracted directory to prevent disk resource exhaustion and
+            // leaving the application in a persistent corrupted state.
+            if (!success && targetDir.exists()) {
+                targetDir.deleteRecursively()
             }
         }
     }.flowOn(Dispatchers.IO)

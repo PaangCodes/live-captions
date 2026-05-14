@@ -39,3 +39,7 @@
 ## 2024-06-03 - Add helper text explaining technical trade-offs
 **Learning:** When presenting users with technical configuration options (like choosing between "Vosk" or "Whisper" STT engines), using only the technical names can be confusing and alienating for non-technical users. It forces them to guess or research the difference.
 **Action:** Always provide descriptive helper text beneath technical options that translates the underlying mechanism into clear, practical user-facing trade-offs (e.g., "Fast / Battery Saver" vs "High Accuracy / Heavy") so users can make informed decisions based on their needs.
+
+## 2026-05-14 - Improve contrast of disabled CircularProgressIndicator
+**Learning:** By default in Jetpack Compose, a `CircularProgressIndicator` uses the primary theme color. When placed inside a disabled component (like a disabled `Button` during a download), it does not automatically dim to match the disabled text color, creating a jarring, high-contrast spinner against a muted background.
+**Action:** Always explicitly set `color = LocalContentColor.current` when using a `CircularProgressIndicator` inline within a text component (like a `Button`), ensuring it gracefully inherits the parent's current active or disabled content color for a cohesive UX.

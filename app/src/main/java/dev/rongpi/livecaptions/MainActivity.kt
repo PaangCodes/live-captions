@@ -42,6 +42,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -49,6 +50,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -157,13 +159,13 @@ class MainActivity : ComponentActivity() {
             // Scaffold and MainActivity layout on every fast-emitting progress update.
 
             val transState = translationManager?.state?.collectAsState()
-            val downloadedLangs = translationManager?.downloadedLanguages?.collectAsState(initial = emptyList())?.value ?: emptyList()
-            val downloadingLangs = translationManager?.downloadingLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
 
-            // ⚡ Bolt Optimization: Convert downloaded languages list to a Set
-            // This turns O(N) list lookups inside the UI rendering loop into fast O(1) set lookups,
-            // avoiding O(N^2) complexity as the number of languages grows.
-            val downloadedLangsSet = remember(downloadedLangs) { downloadedLangs.toSet() }
+            // ⚡ Bolt Optimization: Use Set directly from StateFlow
+            // `TranslationManager.downloadedLanguages` is already exposed as a Set.
+            // Using `initial = emptySet()` and reading it directly eliminates the need
+            // to cache a redundant `toSet()` conversion in the Compose memory slot table.
+            val downloadedLangsSet = translationManager?.downloadedLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
+            val downloadingLangs = translationManager?.downloadingLanguages?.collectAsState(initial = emptySet())?.value ?: emptySet()
 
             MaterialTheme {
                 Scaffold(
@@ -299,7 +301,8 @@ class MainActivity : ComponentActivity() {
                                                 Button(onClick = { }, enabled = false) {
                                                     CircularProgressIndicator(
                                                         modifier = Modifier.size(16.dp),
-                                                        strokeWidth = 2.dp
+                                                        strokeWidth = 2.dp,
+                                                        color = LocalContentColor.current
                                                     )
                                                     Spacer(Modifier.width(8.dp))
                                                     Text("Downloading...")
@@ -369,14 +372,44 @@ class MainActivity : ComponentActivity() {
     ) {
         val sttState by engine.state.collectAsState()
 
+        val isSttReady = sttState is SttState.Ready
+        val isTransReady = transState == null || transState.value is TranslationState.Ready
+        val isEnabled = isSttReady && isTransReady
+
+        val buttonText = when {
+            sttState is SttState.Downloading -> "Downloading STT Model..."
+            transState?.value is TranslationState.DownloadingModel -> "Downloading Language Model..."
+            sttState is SttState.Initializing -> "Initializing Engine..."
+            else -> "Start Live Captions"
+        }
+        val showLoading = sttState is SttState.Downloading || transState?.value is TranslationState.DownloadingModel || sttState is SttState.Initializing
+
         Button(
             onClick = onStart,
             modifier = Modifier.fillMaxWidth(),
-            enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
+            enabled = isEnabled
         ) {
-            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(text = "Start Live Captions")
+            if (sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)) {
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Start Live Captions")
+            } else if (sttState is SttState.Downloading) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Downloading STT Model...")
+            } else if (sttState is SttState.Initializing) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Initializing STT Engine...")
+            } else if (transState != null && transState.value is TranslationState.DownloadingModel) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Downloading Translation Model...")
+            } else {
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Start Live Captions")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -403,29 +436,48 @@ class MainActivity : ComponentActivity() {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Speech-to-Text Settings", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                Row {
+                Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.selectable(
-                            selected = selectedStt == "Vosk",
-                            onClick = { onSttSelected("Vosk") },
-                            role = Role.RadioButton
-                        )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = selectedStt == "Vosk",
+                                onClick = { onSttSelected("Vosk") },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 8.dp)
                     ) {
                         RadioButton(selected = selectedStt == "Vosk", onClick = null)
-                        Text("Vosk", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                        Column(modifier = Modifier.padding(start = 4.dp, end = 8.dp)) {
+                            Text("Vosk")
+                            Text(
+                                "Fast / Battery Saver",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.selectable(
-                            selected = selectedStt == "Whisper",
-                            onClick = { onSttSelected("Whisper") },
-                            role = Role.RadioButton
-                        )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = selectedStt == "Whisper",
+                                onClick = { onSttSelected("Whisper") },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 8.dp)
                     ) {
                         RadioButton(selected = selectedStt == "Whisper", onClick = null)
-                        Text("Whisper", modifier = Modifier.padding(start = 4.dp, end = 8.dp))
+                        Column(modifier = Modifier.padding(start = 4.dp, end = 8.dp)) {
+                            Text("Whisper")
+                            Text(
+                                "High Accuracy / Heavy",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 

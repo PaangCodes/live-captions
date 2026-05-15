@@ -117,10 +117,44 @@ class WhisperSttEngineTest {
         }
 
         val dummyData = ByteArray(10)
-        sttEngine.processAudio(dummyData)
+        sttEngine.processAudio(dummyData, 0, dummyData.size)
 
         job.join()
         assertEquals(1, results.size)
         assertTrue(results[0].startsWith("Whisper partial"))
+    }
+
+    @Test
+    fun `start does not transition to Listening if state is Uninitialized`() = testScope.runTest {
+        sttEngine.start()
+        assertEquals(SttState.Uninitialized, sttEngine.state.value)
+    }
+
+    @Test
+    fun `stop does not transition state if not Listening`() = testScope.runTest {
+        sttEngine.stop()
+        assertEquals(SttState.Uninitialized, sttEngine.state.value)
+
+        sttEngine.initialize(mockConfig)
+        advanceUntilIdle()
+        assertEquals(SttState.Ready, sttEngine.state.value)
+
+        sttEngine.stop()
+        assertEquals(SttState.Ready, sttEngine.state.value)
+    }
+
+    @Test
+    fun `processAudio does not emit result when not Listening`() = testScope.runTest {
+        val results = mutableListOf<String>()
+        val job = launch(UnconfinedTestDispatcher()) {
+            sttEngine.partialResults.take(1).toList(results)
+        }
+
+        val dummyData = ByteArray(10)
+        sttEngine.processAudio(dummyData, 0, dummyData.size)
+
+        advanceUntilIdle()
+        assertEquals(0, results.size)
+        job.cancel()
     }
 }

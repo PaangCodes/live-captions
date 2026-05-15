@@ -72,11 +72,11 @@ class VoskSttEngine(
         }
     }
 
-    override fun processAudio(data: ByteArray) {
+    override fun processAudio(data: ByteArray, offset: Int, length: Int) {
         if (_state.value is SttState.Listening) {
-            // TODO: Feed data to Vosk recognizer
+            // TODO: Feed data to Vosk recognizer using data, offset, and length
             // Dummy logic for stub
-            _partialResults.tryEmit("Vosk partial: ${data.size} bytes")
+            _partialResults.tryEmit("Vosk partial: $length bytes")
         }
     }
 }

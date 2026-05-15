@@ -23,3 +23,9 @@
 ## 2025-02-12 - Eliminate GC Pressure in High-Frequency Audio Capture Loops
 **Learning:** Allocating new byte arrays (e.g., using `ByteArray.copyOf()`) inside a tight, high-frequency loop (like reading from an `AudioRecord` input stream) creates massive Garbage Collection pressure. This can cause application stuttering and dropped frames in real-time audio processing.
 **Action:** Always design and utilize interfaces that accept the pre-allocated buffer along with an `offset` and `length` (e.g., `processAudio(buffer, 0, read)`) to achieve zero-allocation data processing.
+## $(date +%Y-%m-%d) - Zero-Allocation Audio Processing in Capture Loop
+ **Learning:** In high-frequency loop systems like `AudioCaptureService`, reading fixed-size chunks of data from a hardware source (`AudioRecord`) and calling `ByteArray.copyOf(read)` allocates a new memory block on every iteration. This creates constant, massive GC pressure and micro-stutters during processing.
+ **Action:** Instead of allocating new arrays, pass the pre-allocated reusable `buffer` array directly into the `processAudio` method alongside its `offset` (usually 0) and valid `length` (`read`). This enables zero-allocation processing for continuous I/O streams.
+## $(date +%Y-%m-%d) - Zero-Allocation Audio Processing
+ **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
+ **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.

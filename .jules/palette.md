@@ -42,3 +42,10 @@
 ## 2026-05-11 - Inherit disabled colors for inline progress indicators in Jetpack Compose
 **Learning:** When adding an inline `CircularProgressIndicator` inside a styled component (like a `Button`), hardcoding the color (e.g., `MaterialTheme.colorScheme.onPrimary`) can cause severe contrast issues when the component enters a disabled state. The background changes to a disabled color (e.g., light grey), but the hardcoded text/icon color remains unchanged, rendering it invisible.
 **Action:** Always explicitly set the `color` parameter of inline loading indicators to `LocalContentColor.current` to ensure it dynamically inherits the parent's contrasting content color across all component states.
+
+## 2024-06-04 - Dynamic explanations for disabled primary action buttons
+**Learning:** When primary action buttons (like "Start") are disabled due to asynchronous background operations (e.g., downloading or initializing models), leaving the static text unchanged creates confusion. Users may wonder why they cannot click the button and might assume the app is broken.
+**Action:** Always provide inline loading indicators (like a `CircularProgressIndicator` inside the button) and dynamically update the button text to explicitly describe the current blocking state (e.g., "Downloading STT Model...") so users understand exactly why the action is temporarily unavailable.
+## 2026-05-14 - Improve contrast of disabled CircularProgressIndicator
+**Learning:** By default in Jetpack Compose, a `CircularProgressIndicator` uses the primary theme color. When placed inside a disabled component (like a disabled `Button` during a download), it does not automatically dim to match the disabled text color, creating a jarring, high-contrast spinner against a muted background.
+**Action:** Always explicitly set `color = LocalContentColor.current` when using a `CircularProgressIndicator` inline within a text component (like a `Button`), ensuring it gracefully inherits the parent's current active or disabled content color for a cohesive UX.

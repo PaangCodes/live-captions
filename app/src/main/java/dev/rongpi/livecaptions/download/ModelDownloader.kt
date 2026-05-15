@@ -143,14 +143,22 @@ open class ModelDownloader {
                             throw Exception("Failed to create directory $parent")
                         }
 
-                        FileOutputStream(newFile).use { fos ->
-                            var len: Int
-                            while (zis.read(buffer).also { len = it } > 0) {
-                                totalUncompressedBytes += len
-                                if (totalUncompressedBytes > maxUncompressedBytes) {
-                                    throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                        var extractionSuccess = false
+                        try {
+                            FileOutputStream(newFile).use { fos ->
+                                var len: Int
+                                while (zis.read(buffer).also { len = it } > 0) {
+                                    totalUncompressedBytes += len
+                                    if (totalUncompressedBytes > maxUncompressedBytes) {
+                                        throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                                    }
+                                    fos.write(buffer, 0, len)
                                 }
-                                fos.write(buffer, 0, len)
+                            }
+                            extractionSuccess = true
+                        } finally {
+                            if (!extractionSuccess && newFile.exists()) {
+                                newFile.delete()
                             }
                         }
                     }

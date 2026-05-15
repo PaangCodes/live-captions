@@ -7,6 +7,27 @@
 **Learning:** `android:allowBackup="true"` allows users to use `adb backup` to extract application data, potentially leading to unauthorized data extraction if sensitive data is stored.
 **Prevention:** Set `android:allowBackup="false"` in the `AndroidManifest.xml` unless explicitly required and carefully managed.
 
+## 2024-05-24 - [Critical URL Validation Bypass in File Downloads]
+**Vulnerability:** The URL scheme and host checks in `ModelDownloader` could be bypassed using query parameters (e.g., `http://evil.com/model.bin?localhost`). `String.contains()` was used to check for the localhost bypass.
+**Learning:** Checking string components manually using `contains()` instead of actually parsing the URL string leaves the application open to manipulation and bypasses.
+**Prevention:** Always use `java.net.URL` or `java.net.URI` when evaluating URLs for network connections to properly separate protocol, host, and path elements, rather than performing simple string operations.
+## 2024-05-24 - [Enforce Timeouts on Network Clients]
+**Vulnerability:** The OkHttpClient was initialized with default configurations, which could lead to stalled network connections hanging the application thread indefinitely when downloading large STT language models (e.g., Vosk/Whisper).
+**Learning:** Large external downloads must have explicit timeouts to prevent Denial of Service (DoS) due to resource exhaustion.
+**Prevention:** Always explicitly set `connectTimeout`, `readTimeout`, and `writeTimeout` via `OkHttpClient.Builder()` rather than using the default `OkHttpClient()` constructor.
+## 2024-05-24 - [Replace printStackTrace with secure logging]
+**Vulnerability:** The application was using `e.printStackTrace()` in `WhisperSttEngine.kt`'s initialization catch block.
+**Learning:** `printStackTrace()` writes directly to standard error, which is considered insecure as it can leak sensitive system or application structural information (stack traces) to logs or users unintentionally.
+**Prevention:** Always use proper secure logging frameworks (like Android's `Log.e`) to handle exceptions securely without leaking stack trace information directly to system output streams.
+## 2024-05-24 - [Avoid e.printStackTrace() and Share OkHttpClient Instances]
+**Vulnerability:** The application was printing raw exceptions using `e.printStackTrace()` in `WhisperSttEngine.kt`, potentially leaking internal details. Furthermore, `OkHttpClient` was being re-instantiated for every request in `ModelDownloader.kt`, which can lead to connection leaks and resource exhaustion (DoS vulnerability).
+**Learning:** Raw stack traces must not be exposed carelessly. In Android, `System.err` outputs from `printStackTrace()` bypass proper logging mechanisms. Additionally, `OkHttpClient` instances create expensive thread and connection pools that must be shared to prevent application crashes under load.
+**Prevention:** Always use proper system logging mechanisms like `Log.e(TAG, message, e)` to handle exceptions securely without leaking details to raw standard error. For OkHttpClient, define shared instances using `by lazy { createClient() }` to reuse the underlying connection pools across requests.
+
+## 2026-05-09 - [Prevent Unauthorized Data Extraction via App Backup]
+**Vulnerability:** The application had `android:allowBackup="true"` enabled in the `AndroidManifest.xml`.
+**Learning:** Enabling application backup allows sensitive user data to be extracted from the device via `adb backup`, which can be exploited if an attacker has physical access to the device or if the device is compromised.
+**Prevention:** Always set `android:allowBackup="false"` in the `AndroidManifest.xml` for applications that handle sensitive data to prevent unauthorized data extraction.
 ## 2024-05-12 - Incomplete cleanup of partially extracted files on failure
 **Vulnerability:** When extracting downloaded archives, the `downloadAndExtractZip` function correctly removed the temporary zip file via a `finally` block but failed to delete partially extracted files from the destination directory `targetDir` if the process failed midway (e.g., due to a security constraint violation or I/O error).
 **Learning:** This could lead to a Denial of Service (DoS) vulnerability via disk space exhaustion or persistent corrupted states if an archive bombs mid-extraction or connection fails, leaving behind potentially large and incomplete data that isn't cleaned up automatically.

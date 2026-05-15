@@ -117,7 +117,7 @@ class WhisperSttEngineTest {
         }
 
         val dummyData = ByteArray(10)
-        sttEngine.processAudio(dummyData)
+        sttEngine.processAudio(dummyData, 0, dummyData.size)
 
         job.join()
         assertEquals(1, results.size)
@@ -151,7 +151,7 @@ class WhisperSttEngineTest {
         }
 
         val dummyData = ByteArray(10)
-        sttEngine.processAudio(dummyData)
+        sttEngine.processAudio(dummyData, 0, dummyData.size)
 
         advanceUntilIdle()
         assertEquals(0, results.size)

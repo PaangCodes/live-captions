@@ -164,10 +164,6 @@ open class ModelDownloader {
             if (tempZipFile.exists()) {
                 tempZipFile.delete()
             }
-
-            // Security Best Practice: If extraction fails or is interrupted, delete the
-            // partially extracted directory to prevent disk resource exhaustion and
-            // leaving the application in a persistent corrupted state.
             if (!success && targetDir.exists()) {
                 targetDir.deleteRecursively()
             }

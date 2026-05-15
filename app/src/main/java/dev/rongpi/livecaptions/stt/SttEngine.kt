@@ -11,5 +11,5 @@ interface SttEngine {
     fun initialize(config: SttConfig)
     fun start()
     fun stop()
-    fun processAudio(data: ByteArray)
+    fun processAudio(data: ByteArray, offset: Int, length: Int)
 }

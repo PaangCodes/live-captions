@@ -76,7 +76,7 @@ open class ModelDownloader {
         val tempZipFile = File(context.filesDir, "$targetDirName.zip")
         val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
-        var overallSuccess = false
+        var success = false
         try {
             // 1. Download to temporary zip file, tracking accurate compressed bytes.
             FileOutputStream(tempZipFile).use { fos ->
@@ -166,13 +166,13 @@ open class ModelDownloader {
                 }
                 zis.closeEntry()
             }
-            overallSuccess = true
+            success = true
         } finally {
             // 3. Clean up the temp zip file
             if (tempZipFile.exists()) {
                 tempZipFile.delete()
             }
-            if (!overallSuccess && targetDir.exists()) {
+            if (!success && targetDir.exists()) {
                 targetDir.deleteRecursively()
             }
         }

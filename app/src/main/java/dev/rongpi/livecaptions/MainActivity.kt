@@ -42,6 +42,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -299,7 +300,8 @@ class MainActivity : ComponentActivity() {
                                                 Button(onClick = { }, enabled = false) {
                                                     CircularProgressIndicator(
                                                         modifier = Modifier.size(16.dp),
-                                                        strokeWidth = 2.dp
+                                                        strokeWidth = 2.dp,
+                                                        color = LocalContentColor.current
                                                     )
                                                     Spacer(Modifier.width(8.dp))
                                                     Text("Downloading...")
@@ -369,14 +371,44 @@ class MainActivity : ComponentActivity() {
     ) {
         val sttState by engine.state.collectAsState()
 
+        val isSttReady = sttState is SttState.Ready
+        val isTransReady = transState == null || transState.value is TranslationState.Ready
+        val isEnabled = isSttReady && isTransReady
+
+        val buttonText = when {
+            sttState is SttState.Downloading -> "Downloading STT Model..."
+            transState?.value is TranslationState.DownloadingModel -> "Downloading Language Model..."
+            sttState is SttState.Initializing -> "Initializing Engine..."
+            else -> "Start Live Captions"
+        }
+        val showLoading = sttState is SttState.Downloading || transState?.value is TranslationState.DownloadingModel || sttState is SttState.Initializing
+
         Button(
             onClick = onStart,
             modifier = Modifier.fillMaxWidth(),
-            enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
+            enabled = isEnabled
         ) {
-            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(text = "Start Live Captions")
+            if (sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)) {
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Start Live Captions")
+            } else if (sttState is SttState.Downloading) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Downloading STT Model...")
+            } else if (sttState is SttState.Initializing) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Initializing STT Engine...")
+            } else if (transState != null && transState.value is TranslationState.DownloadingModel) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Downloading Translation Model...")
+            } else {
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Start Live Captions")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

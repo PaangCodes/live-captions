@@ -73,11 +73,11 @@ class WhisperSttEngine(
         }
     }
 
-    override fun processAudio(data: ByteArray) {
+    override fun processAudio(data: ByteArray, offset: Int, length: Int) {
         if (_state.value is SttState.Listening) {
-            // TODO: Feed data to Whisper recognizer
+            // TODO: Feed data to Whisper recognizer using data, offset, and length
             // Dummy logic for stub
-            _partialResults.tryEmit("Whisper partial: ${data.size} bytes")
+            _partialResults.tryEmit("Whisper partial: $length bytes")
         }
     }
 }

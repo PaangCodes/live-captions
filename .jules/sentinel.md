@@ -35,3 +35,8 @@
 **Vulnerability:** The application was printing raw exceptions using `e.printStackTrace()` in `WhisperSttEngine.kt`, potentially leaking internal details. Furthermore, `OkHttpClient` was being re-instantiated for every request in `ModelDownloader.kt`, which can lead to connection leaks and resource exhaustion (DoS vulnerability).
 **Learning:** Raw stack traces must not be exposed carelessly. In Android, `System.err` outputs from `printStackTrace()` bypass proper logging mechanisms. Additionally, `OkHttpClient` instances create expensive thread and connection pools that must be shared to prevent application crashes under load.
 **Prevention:** Always use proper system logging mechanisms like `Log.e(TAG, message, e)` to handle exceptions securely without leaking details to raw standard error. For OkHttpClient, define shared instances using `by lazy { createClient() }` to reuse the underlying connection pools across requests.
+
+## 2026-05-09 - [Prevent Unauthorized Data Extraction via App Backup]
+**Vulnerability:** The application had `android:allowBackup="true"` enabled in the `AndroidManifest.xml`.
+**Learning:** Enabling application backup allows sensitive user data to be extracted from the device via `adb backup`, which can be exploited if an attacker has physical access to the device or if the device is compromised.
+**Prevention:** Always set `android:allowBackup="false"` in the `AndroidManifest.xml` for applications that handle sensitive data to prevent unauthorized data extraction.

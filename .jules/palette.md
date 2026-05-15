@@ -39,6 +39,10 @@
 ## 2024-06-03 - Add helper text explaining technical trade-offs
 **Learning:** When presenting users with technical configuration options (like choosing between "Vosk" or "Whisper" STT engines), using only the technical names can be confusing and alienating for non-technical users. It forces them to guess or research the difference.
 **Action:** Always provide descriptive helper text beneath technical options that translates the underlying mechanism into clear, practical user-facing trade-offs (e.g., "Fast / Battery Saver" vs "High Accuracy / Heavy") so users can make informed decisions based on their needs.
+
+## 2024-06-04 - Dynamic Loading States & Contrast for Disabled Buttons
+**Learning:** When primary action buttons are disabled due to asynchronous background operations (e.g., STT/Translation model downloads), they should convey what the blocking task is. Also, when adding an inline `CircularProgressIndicator` inside a styled component (like a `Button`), you must explicitly set its `color = LocalContentColor.current`. Otherwise, it won't dynamically inherit the parent's contrasting content color and might not be visible against the background.
+**Action:** Always provide an inline loading indicator with explicit `color = LocalContentColor.current` and dynamically update the button text to explicitly describe the blocking state (e.g., 'Downloading STT Model...') to prevent user confusion and ensure visual accessibility.
 ## 2026-05-11 - Inherit disabled colors for inline progress indicators in Jetpack Compose
 **Learning:** When adding an inline `CircularProgressIndicator` inside a styled component (like a `Button`), hardcoding the color (e.g., `MaterialTheme.colorScheme.onPrimary`) can cause severe contrast issues when the component enters a disabled state. The background changes to a disabled color (e.g., light grey), but the hardcoded text/icon color remains unchanged, rendering it invisible.
 **Action:** Always explicitly set the `color` parameter of inline loading indicators to `LocalContentColor.current` to ensure it dynamically inherits the parent's contrasting content color across all component states.

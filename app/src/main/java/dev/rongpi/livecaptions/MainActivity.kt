@@ -371,10 +371,22 @@ class MainActivity : ComponentActivity() {
     ) {
         val sttState by engine.state.collectAsState()
 
+        val isSttReady = sttState is SttState.Ready
+        val isTransReady = transState == null || transState.value is TranslationState.Ready
+        val isEnabled = isSttReady && isTransReady
+
+        val buttonText = when {
+            sttState is SttState.Downloading -> "Downloading STT Model..."
+            transState?.value is TranslationState.DownloadingModel -> "Downloading Language Model..."
+            sttState is SttState.Initializing -> "Initializing Engine..."
+            else -> "Start Live Captions"
+        }
+        val showLoading = sttState is SttState.Downloading || transState?.value is TranslationState.DownloadingModel || sttState is SttState.Initializing
+
         Button(
             onClick = onStart,
             modifier = Modifier.fillMaxWidth(),
-            enabled = sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)
+            enabled = isEnabled
         ) {
             if (sttState is SttState.Ready && (transState == null || transState.value is TranslationState.Ready)) {
                 Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)

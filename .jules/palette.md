@@ -39,3 +39,17 @@
 ## 2024-06-03 - Add helper text explaining technical trade-offs
 **Learning:** When presenting users with technical configuration options (like choosing between "Vosk" or "Whisper" STT engines), using only the technical names can be confusing and alienating for non-technical users. It forces them to guess or research the difference.
 **Action:** Always provide descriptive helper text beneath technical options that translates the underlying mechanism into clear, practical user-facing trade-offs (e.g., "Fast / Battery Saver" vs "High Accuracy / Heavy") so users can make informed decisions based on their needs.
+
+## 2024-06-04 - Dynamic Loading States & Contrast for Disabled Buttons
+**Learning:** When primary action buttons are disabled due to asynchronous background operations (e.g., STT/Translation model downloads), they should convey what the blocking task is. Also, when adding an inline `CircularProgressIndicator` inside a styled component (like a `Button`), you must explicitly set its `color = LocalContentColor.current`. Otherwise, it won't dynamically inherit the parent's contrasting content color and might not be visible against the background.
+**Action:** Always provide an inline loading indicator with explicit `color = LocalContentColor.current` and dynamically update the button text to explicitly describe the blocking state (e.g., 'Downloading STT Model...') to prevent user confusion and ensure visual accessibility.
+## 2026-05-11 - Inherit disabled colors for inline progress indicators in Jetpack Compose
+**Learning:** When adding an inline `CircularProgressIndicator` inside a styled component (like a `Button`), hardcoding the color (e.g., `MaterialTheme.colorScheme.onPrimary`) can cause severe contrast issues when the component enters a disabled state. The background changes to a disabled color (e.g., light grey), but the hardcoded text/icon color remains unchanged, rendering it invisible.
+**Action:** Always explicitly set the `color` parameter of inline loading indicators to `LocalContentColor.current` to ensure it dynamically inherits the parent's contrasting content color across all component states.
+
+## 2024-06-04 - Dynamic explanations for disabled primary action buttons
+**Learning:** When primary action buttons (like "Start") are disabled due to asynchronous background operations (e.g., downloading or initializing models), leaving the static text unchanged creates confusion. Users may wonder why they cannot click the button and might assume the app is broken.
+**Action:** Always provide inline loading indicators (like a `CircularProgressIndicator` inside the button) and dynamically update the button text to explicitly describe the current blocking state (e.g., "Downloading STT Model...") so users understand exactly why the action is temporarily unavailable.
+## 2026-05-14 - Improve contrast of disabled CircularProgressIndicator
+**Learning:** By default in Jetpack Compose, a `CircularProgressIndicator` uses the primary theme color. When placed inside a disabled component (like a disabled `Button` during a download), it does not automatically dim to match the disabled text color, creating a jarring, high-contrast spinner against a muted background.
+**Action:** Always explicitly set `color = LocalContentColor.current` when using a `CircularProgressIndicator` inline within a text component (like a `Button`), ensuring it gracefully inherits the parent's current active or disabled content color for a cohesive UX.

@@ -19,3 +19,9 @@
 ## 2024-05-19 - Pre-compute Canonical Path in Zip Extraction Loop
  **Learning:** Resolving `File.canonicalPath` inside a tight loop (like extracting a zip archive) causes severe performance degradation due to redundant file system I/O.
  **Action:** Pre-computed the `targetDir.canonicalPath + File.separator` outside the `while` loop in `ModelDownloader.kt` and used the cached variable for the Zip Slip validation check inside the loop. Reduced extraction time by ~11.7% (~110ms improvement on a 5000-file mock zip).
+## $(date +%Y-%m-%d) - Zero-Allocation Audio Processing in Capture Loop
+ **Learning:** In high-frequency loop systems like `AudioCaptureService`, reading fixed-size chunks of data from a hardware source (`AudioRecord`) and calling `ByteArray.copyOf(read)` allocates a new memory block on every iteration. This creates constant, massive GC pressure and micro-stutters during processing.
+ **Action:** Instead of allocating new arrays, pass the pre-allocated reusable `buffer` array directly into the `processAudio` method alongside its `offset` (usually 0) and valid `length` (`read`). This enables zero-allocation processing for continuous I/O streams.
+## $(date +%Y-%m-%d) - Zero-Allocation Audio Processing
+ **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
+ **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.

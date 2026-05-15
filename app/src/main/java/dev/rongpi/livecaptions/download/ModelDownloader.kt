@@ -143,14 +143,22 @@ open class ModelDownloader {
                             throw Exception("Failed to create directory $parent")
                         }
 
-                        FileOutputStream(newFile).use { fos ->
-                            var len: Int
-                            while (zis.read(buffer).also { len = it } > 0) {
-                                totalUncompressedBytes += len
-                                if (totalUncompressedBytes > maxUncompressedBytes) {
-                                    throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                        var extractionSuccess = false
+                        try {
+                            FileOutputStream(newFile).use { fos ->
+                                var len: Int
+                                while (zis.read(buffer).also { len = it } > 0) {
+                                    totalUncompressedBytes += len
+                                    if (totalUncompressedBytes > maxUncompressedBytes) {
+                                        throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                                    }
+                                    fos.write(buffer, 0, len)
                                 }
-                                fos.write(buffer, 0, len)
+                            }
+                            extractionSuccess = true
+                        } finally {
+                            if (!extractionSuccess && newFile.exists()) {
+                                newFile.delete()
                             }
                         }
                     }
@@ -164,7 +172,6 @@ open class ModelDownloader {
             if (tempZipFile.exists()) {
                 tempZipFile.delete()
             }
-            // 4. Clean up the partially extracted target dir if something failed
             if (!success && targetDir.exists()) {
                 targetDir.deleteRecursively()
             }

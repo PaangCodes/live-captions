@@ -6,7 +6,7 @@
 **Learning:** Reading high-frequency state flow emissions (like STT model download progress `.collectAsState().value`) at the root level of a large Jetpack Compose component (e.g., inside the `setContent` root layout of `MainActivity`) causes severe UI jank. This is because every state emission triggers a full recomposition of the large root layout and all its non-memoized children.
 **Action:** Always isolate high-frequency state reads into the lowest possible child `@Composable` functions (e.g., isolating `Start`/`Stop` buttons into their own `LiveCaptionControls` composable). This ensures only that specific small sub-tree recomposes when the state changes.
 
-## $(date +%Y-%m-%d) - Reduce System.currentTimeMillis Overhead
+## 2026-05-17 - Reduce System.currentTimeMillis Overhead
 **Learning:** Initializing the tracking timestamp (`lastEmitTime`) to 0 instead of the current system time in a throttling logic bypasses rate limiting for the very first event, executing it instantly.
 **Action:** When implementing time-throttling in high-frequency loops (like download progress), always initialize `lastEmitTime = System.currentTimeMillis()`.
 
@@ -19,16 +19,19 @@
 ## 2024-05-19 - Pre-compute Canonical Path in Zip Extraction Loop
  **Learning:** Resolving `File.canonicalPath` inside a tight loop (like extracting a zip archive) causes severe performance degradation due to redundant file system I/O.
  **Action:** Pre-computed the `targetDir.canonicalPath + File.separator` outside the `while` loop in `ModelDownloader.kt` and used the cached variable for the Zip Slip validation check inside the loop. Reduced extraction time by ~11.7% (~110ms improvement on a 5000-file mock zip).
-## $(date +%Y-%m-%d) - Eliminate ByteArray.copyOf() Allocation
+## 2026-05-17 - Eliminate ByteArray.copyOf() Allocation
  **Learning:** In high-frequency loops like `AudioRecord` capture, constantly using `ByteArray.copyOf()` generates significant temporary memory allocations. This increases Garbage Collection (GC) overhead and can cause audio stuttering.
  **Action:** Update processing interfaces like `processAudio(data, offset, length)` to accept the raw array slice instead of making full array copies.
 
 ## 2025-02-12 - Eliminate GC Pressure in High-Frequency Audio Capture Loops
 **Learning:** Allocating new byte arrays (e.g., using `ByteArray.copyOf()`) inside a tight, high-frequency loop (like reading from an `AudioRecord` input stream) creates massive Garbage Collection pressure. This can cause application stuttering and dropped frames in real-time audio processing.
 **Action:** Always design and utilize interfaces that accept the pre-allocated buffer along with an `offset` and `length` (e.g., `processAudio(buffer, 0, read)`) to achieve zero-allocation data processing.
-## $(date +%Y-%m-%d) - Zero-Allocation Audio Processing in Capture Loop
+## 2026-05-17 - Zero-Allocation Audio Processing in Capture Loop
  **Learning:** In high-frequency loop systems like `AudioCaptureService`, reading fixed-size chunks of data from a hardware source (`AudioRecord`) and calling `ByteArray.copyOf(read)` allocates a new memory block on every iteration. This creates constant, massive GC pressure and micro-stutters during processing.
  **Action:** Instead of allocating new arrays, pass the pre-allocated reusable `buffer` array directly into the `processAudio` method alongside its `offset` (usually 0) and valid `length` (`read`). This enables zero-allocation processing for continuous I/O streams.
-## $(date +%Y-%m-%d) - Zero-Allocation Audio Processing
+## 2026-05-17 - Zero-Allocation Audio Processing
  **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
  **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.
+## 2026-05-17 - Bypass JNI Overhead for STT Pauses
+ **Learning:** When STT engines emit empty or blank strings during speech pauses, sending these through `translator?.translate()` incurs unnecessary Coroutine suspension and JNI boundary crossing overhead, slowing down the processing loop.
+ **Action:** Implemented an early return (`if (text.isBlank())`) in `TranslationManager.kt` to bypass ML Kit's translation entirely for blank payloads.

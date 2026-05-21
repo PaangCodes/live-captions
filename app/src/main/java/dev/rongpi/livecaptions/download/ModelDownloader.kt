@@ -59,48 +59,50 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            throw Exception("Failed to download file: ${response.code}")
-        }
-
-        val body = response.body ?: throw Exception("Empty response body")
-        val totalBytes = body.contentLength()
-        val inputStream: InputStream = body.byteStream()
-
-        if (!targetDir.exists()) {
-            targetDir.mkdirs()
-        }
-
-        val tempZipFile = File(context.filesDir, "$targetDirName.zip")
-        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
         var success = false
+        val tempZipFile = File(context.filesDir, "$targetDirName.zip")
+
         try {
-            // 1. Download to temporary zip file, tracking accurate compressed bytes.
-            FileOutputStream(tempZipFile).use { fos ->
-                val buffer = ByteArray(8192)
-                var downloadedBytes = 0L
-                var len: Int
-                var lastEmitTime = System.currentTimeMillis()
-                var bytesSinceLastCheck = 0L
-                while (inputStream.read(buffer).also { len = it } > 0) {
-                    fos.write(buffer, 0, len)
-                    downloadedBytes += len
-                    bytesSinceLastCheck += len
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw Exception("Failed to download file: ${response.code}")
+                }
 
-                    if (downloadedBytes > maxDownloadBytes) {
-                        throw SecurityException("Download exceeds maximum allowed size")
-                    }
+                val body = response.body ?: throw Exception("Empty response body")
+                val totalBytes = body.contentLength()
+                val inputStream: InputStream = body.byteStream()
 
-                    if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
-                        val currentTime = System.currentTimeMillis()
-                        if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
-                            emit(DownloadProgress(downloadedBytes, totalBytes))
-                            lastEmitTime = currentTime
+                if (!targetDir.exists()) {
+                    targetDir.mkdirs()
+                }
+
+                val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
+
+                // 1. Download to temporary zip file, tracking accurate compressed bytes.
+                FileOutputStream(tempZipFile).use { fos ->
+                    val buffer = ByteArray(8192)
+                    var downloadedBytes = 0L
+                    var len: Int
+                    var lastEmitTime = System.currentTimeMillis()
+                    var bytesSinceLastCheck = 0L
+                    while (inputStream.read(buffer).also { len = it } > 0) {
+                        fos.write(buffer, 0, len)
+                        downloadedBytes += len
+                        bytesSinceLastCheck += len
+
+                        if (downloadedBytes > maxDownloadBytes) {
+                            throw SecurityException("Download exceeds maximum allowed size")
                         }
-                        bytesSinceLastCheck = 0L
+
+                        if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
+                            val currentTime = System.currentTimeMillis()
+                            if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                                emit(DownloadProgress(downloadedBytes, totalBytes))
+                                lastEmitTime = currentTime
+                            }
+                            bytesSinceLastCheck = 0L
+                        }
                     }
                 }
             }
@@ -190,47 +192,48 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            throw Exception("Failed to download file: ${response.code}")
-        }
-
-        val body = response.body ?: throw Exception("Empty response body")
-        val totalBytes = body.contentLength()
-        val inputStream: InputStream = body.byteStream()
-
-        val parent = targetFile.parentFile
-        if (parent != null && !parent.exists() && !parent.mkdirs()) {
-             throw Exception("Failed to create directory $parent")
-        }
-
-        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
         var success = false
         try {
-            FileOutputStream(targetFile).use { fos ->
-                val buffer = ByteArray(8192)
-                var downloadedBytes = 0L
-                var len: Int
-                var lastEmitTime = System.currentTimeMillis()
-                var bytesSinceLastCheck = 0L
-                while (inputStream.read(buffer).also { len = it } > 0) {
-                    fos.write(buffer, 0, len)
-                    downloadedBytes += len
-                    bytesSinceLastCheck += len
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw Exception("Failed to download file: ${response.code}")
+                }
 
-                    if (downloadedBytes > maxDownloadBytes) {
-                        throw SecurityException("Download exceeds maximum allowed size")
-                    }
+                val body = response.body ?: throw Exception("Empty response body")
+                val totalBytes = body.contentLength()
+                val inputStream: InputStream = body.byteStream()
 
-                    if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
-                        val currentTime = System.currentTimeMillis()
-                        if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
-                            emit(DownloadProgress(downloadedBytes, totalBytes))
-                            lastEmitTime = currentTime
+                val parent = targetFile.parentFile
+                if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                     throw Exception("Failed to create directory $parent")
+                }
+
+                val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
+
+                FileOutputStream(targetFile).use { fos ->
+                    val buffer = ByteArray(8192)
+                    var downloadedBytes = 0L
+                    var len: Int
+                    var lastEmitTime = System.currentTimeMillis()
+                    var bytesSinceLastCheck = 0L
+                    while (inputStream.read(buffer).also { len = it } > 0) {
+                        fos.write(buffer, 0, len)
+                        downloadedBytes += len
+                        bytesSinceLastCheck += len
+
+                        if (downloadedBytes > maxDownloadBytes) {
+                            throw SecurityException("Download exceeds maximum allowed size")
                         }
-                        bytesSinceLastCheck = 0L
+
+                        if (bytesSinceLastCheck >= 512 * 1024 || downloadedBytes == totalBytes) {
+                            val currentTime = System.currentTimeMillis()
+                            if (currentTime - lastEmitTime >= 100 || downloadedBytes == totalBytes) {
+                                emit(DownloadProgress(downloadedBytes, totalBytes))
+                                lastEmitTime = currentTime
+                            }
+                            bytesSinceLastCheck = 0L
+                        }
                     }
                 }
             }

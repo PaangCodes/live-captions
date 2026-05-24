@@ -138,6 +138,13 @@ class TranslationManager(
             textStream.distinctUntilChanged().conflate().collect { text ->
                 if (_state.value is TranslationState.Ready) {
                     try {
+                        // ⚡ Bolt Optimization: Bypass JNI boundary overhead for blank text
+                        // Emit blank downstream immediately to clear stale UI captions.
+                        if (text.isBlank()) {
+                            _translatedText.emit(text)
+                            return@collect
+                        }
+
                         val translated = translator?.translate(text)?.await()
                         if (translated != null) {
                             _translatedText.emit(translated)

@@ -53,3 +53,6 @@
 ## 2026-05-14 - Improve contrast of disabled CircularProgressIndicator
 **Learning:** By default in Jetpack Compose, a `CircularProgressIndicator` uses the primary theme color. When placed inside a disabled component (like a disabled `Button` during a download), it does not automatically dim to match the disabled text color, creating a jarring, high-contrast spinner against a muted background.
 **Action:** Always explicitly set `color = LocalContentColor.current` when using a `CircularProgressIndicator` inline within a text component (like a `Button`), ensuring it gracefully inherits the parent's current active or disabled content color for a cohesive UX.
+## 2024-05-24 - Improve contrast of disabled progress indicators
+**Learning:** By default, `CircularProgressIndicator` uses the primary theme color. When placed inside a styled component like a disabled `Button` (e.g. during a model download state), it does not automatically dim to match the disabled text color, creating a jarring, high-contrast spinner against a muted background.
+**Action:** Always explicitly set `color = LocalContentColor.current` when using a `CircularProgressIndicator` inline within a styled component (like a disabled `Button`), ensuring it gracefully inherits the parent's current active or disabled content color for a cohesive UX.

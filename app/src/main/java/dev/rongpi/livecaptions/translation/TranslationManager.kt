@@ -137,6 +137,11 @@ class TranslationManager(
             // Use conflate so if translation is slow, we drop stale intermediate strings and translate the latest.
             textStream.distinctUntilChanged().conflate().collect { text ->
                 if (_state.value is TranslationState.Ready) {
+                    // ⚡ Bolt Optimization: Bypass ML Kit JNI and coroutine suspension for empty text
+                    if (text.isBlank()) {
+                        _translatedText.emit(text)
+                        return@collect
+                    }
                     try {
                         val translated = translator?.translate(text)?.await()
                         if (translated != null) {

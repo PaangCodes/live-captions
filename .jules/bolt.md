@@ -32,3 +32,6 @@
 ## $(date +%Y-%m-%d) - Zero-Allocation Audio Processing
  **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
  **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.
+## 2026-05-25 - Bypass JNI for Blank Payloads
+**Learning:** When sending data to ML Kit or other JNI-bound APIs, unnecessary coroutine suspension and JNI boundary crossing overhead occurs for empty/blank payloads often emitted by STT engines during speech pauses.
+**Action:** Bypassed ML Kit JNI and coroutine suspension for empty text with an early return, still emitting the blank text downstream so the UI correctly clears stale captions.

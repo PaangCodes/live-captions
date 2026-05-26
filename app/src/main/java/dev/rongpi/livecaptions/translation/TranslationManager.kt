@@ -137,6 +137,16 @@ class TranslationManager(
             // Use conflate so if translation is slow, we drop stale intermediate strings and translate the latest.
             textStream.distinctUntilChanged().conflate().collect { text ->
                 if (_state.value is TranslationState.Ready) {
+                    // ⚡ Bolt Optimization: Bypass ML Kit JNI for empty/blank payloads
+                    // STT engines frequently emit blank text during speech pauses. By intercepting these
+                    // and emitting them directly, we avoid the overhead of coroutine suspension and
+                    // crossing the JNI boundary to the ML Kit native translation engine. Crucially,
+                    // we still emit the blank text downstream so the UI clears stale captions correctly.
+                    if (text.isBlank()) {
+                        _translatedText.emit(text)
+                        return@collect
+                    }
+
                     try {
                         val translated = translator?.translate(text)?.await()
                         if (translated != null) {

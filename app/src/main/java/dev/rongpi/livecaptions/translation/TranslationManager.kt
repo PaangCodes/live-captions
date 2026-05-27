@@ -138,6 +138,15 @@ class TranslationManager(
             textStream.distinctUntilChanged().conflate().collect { text ->
                 if (_state.value is TranslationState.Ready) {
                     try {
+                        // ⚡ Bolt Optimization: Skip JNI boundary crossing for blank payloads
+                        // STT engines frequently emit blank strings during speech pauses.
+                        // Bypassing the ML Kit translation avoids unnecessary coroutine suspension
+                        // and JNI overhead, while still emitting the blank text to clear UI captions.
+                        if (text.isBlank()) {
+                            _translatedText.emit(text)
+                            return@collect
+                        }
+
                         val translated = translator?.translate(text)?.await()
                         if (translated != null) {
                             _translatedText.emit(translated)

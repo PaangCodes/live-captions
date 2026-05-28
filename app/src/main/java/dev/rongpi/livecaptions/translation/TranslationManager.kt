@@ -136,6 +136,14 @@ class TranslationManager(
             // Use distinctUntilChanged to avoid translating the exact same text again.
             // Use conflate so if translation is slow, we drop stale intermediate strings and translate the latest.
             textStream.distinctUntilChanged().conflate().collect { text ->
+                if (text.isBlank()) {
+                    // ⚡ Bolt Optimization: Early return for blank payloads
+                    // Bypasses unnecessary JNI overhead and ML Kit translation delay during speech pauses.
+                    // Emitting downstream ensures the UI clears any stale captions.
+                    _translatedText.emit(text)
+                    return@collect
+                }
+
                 if (_state.value is TranslationState.Ready) {
                     try {
                         val translated = translator?.translate(text)?.await()

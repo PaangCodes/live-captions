@@ -59,15 +59,14 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw Exception("Failed to download file: ${response.code}")
+            }
 
-        if (!response.isSuccessful) {
-            throw Exception("Failed to download file: ${response.code}")
-        }
-
-        val body = response.body ?: throw Exception("Empty response body")
-        val totalBytes = body.contentLength()
-        val inputStream: InputStream = body.byteStream()
+            val body = response.body ?: throw Exception("Empty response body")
+            val totalBytes = body.contentLength()
+            val inputStream: InputStream = body.byteStream()
 
         if (!targetDir.exists()) {
             targetDir.mkdirs()
@@ -176,6 +175,7 @@ open class ModelDownloader {
                 targetDir.deleteRecursively()
             }
         }
+        }
     }.flowOn(Dispatchers.IO)
 
     open fun downloadFile(context: Context, url: String, targetFileName: String): Flow<DownloadProgress> = flow {
@@ -190,15 +190,14 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw Exception("Failed to download file: ${response.code}")
+            }
 
-        if (!response.isSuccessful) {
-            throw Exception("Failed to download file: ${response.code}")
-        }
-
-        val body = response.body ?: throw Exception("Empty response body")
-        val totalBytes = body.contentLength()
-        val inputStream: InputStream = body.byteStream()
+            val body = response.body ?: throw Exception("Empty response body")
+            val totalBytes = body.contentLength()
+            val inputStream: InputStream = body.byteStream()
 
         val parent = targetFile.parentFile
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
@@ -239,6 +238,7 @@ open class ModelDownloader {
             if (!success && targetFile.exists()) {
                 targetFile.delete()
             }
+        }
         }
     }.flowOn(Dispatchers.IO)
 }

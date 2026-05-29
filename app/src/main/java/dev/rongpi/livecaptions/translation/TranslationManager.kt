@@ -138,6 +138,12 @@ class TranslationManager(
             textStream.distinctUntilChanged().conflate().collect { text ->
                 if (_state.value is TranslationState.Ready) {
                     try {
+                        // ⚡ Bolt Optimization: Skip JNI call for blank text
+                        if (text.isBlank()) {
+                            _translatedText.emit(text)
+                            return@collect
+                        }
+
                         val translated = translator?.translate(text)?.await()
                         if (translated != null) {
                             _translatedText.emit(translated)

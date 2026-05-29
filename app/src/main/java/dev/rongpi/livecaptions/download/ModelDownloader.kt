@@ -59,7 +59,7 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
+        client.newCall(request).execute().use { response ->
 
         if (!response.isSuccessful) {
             throw Exception("Failed to download file: ${response.code}")
@@ -176,6 +176,7 @@ open class ModelDownloader {
                 targetDir.deleteRecursively()
             }
         }
+        } // End of response.use
     }.flowOn(Dispatchers.IO)
 
     open fun downloadFile(context: Context, url: String, targetFileName: String): Flow<DownloadProgress> = flow {
@@ -190,7 +191,7 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        val response = client.newCall(request).execute()
+        client.newCall(request).execute().use { response ->
 
         if (!response.isSuccessful) {
             throw Exception("Failed to download file: ${response.code}")
@@ -240,5 +241,6 @@ open class ModelDownloader {
                 targetFile.delete()
             }
         }
+        } // End of response.use
     }.flowOn(Dispatchers.IO)
 }

@@ -44,3 +44,8 @@
 **Vulnerability:** Extracted partial files may persist on disk after an extraction exception.
 **Learning:** If the extraction process fails or is interrupted, the partially extracted target directory is left in a corrupted state, potentially leading to disk resource exhaustion or a persistent corrupted state within the application's file storage.
 **Prevention:** Track extraction success and ensure the entire partially extracted target directory is deleted (e.g., using a `finally` block with `deleteRecursively()`) if the process fails to complete.
+
+## 2024-05-29 - [OkHttp Connection Exhaustion]
+**Vulnerability:** OkHttp `Response` objects returned by `client.newCall().execute()` were not closed, leading to connection pool resource exhaustion and Denial of Service (DoS) vulnerabilities, especially during continuous flow emissions.
+**Learning:** When using cold flows like `flow { ... }`, the `.use { }` block managing the network response must encapsulate the entire stream reading and emission loop, terminating its scope immediately before closing the flow or flow-altering operators like `.flowOn()`.
+**Prevention:** Always explicitly wrap `client.newCall().execute()` in a `try-with-resources` or Kotlin `.use { response -> ... }` block to ensure the underlying connection is released to the pool.

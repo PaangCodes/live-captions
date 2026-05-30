@@ -41,7 +41,8 @@ class TranslationManager(
 
     private var translator: Translator? = null
     private var translateJob: Job? = null
-    private val modelManager = RemoteModelManager.getInstance()
+    // Lazy init to allow mocking in unit tests without crashing on MlKitContext
+    private val modelManager by lazy { RemoteModelManager.getInstance() }
 
     init {
         refreshDownloadedLanguages()
@@ -138,6 +139,15 @@ class TranslationManager(
             textStream.distinctUntilChanged().conflate().collect { text ->
                 if (_state.value is TranslationState.Ready) {
                     try {
+                        // ⚡ Bolt Optimization: Early return for empty/blank payloads
+                        // STT engines often emit blank payloads during speech pauses. Bypassing
+                        // ML Kit's translation queue and JNI boundaries for these events reduces
+                        // coroutine suspension overhead and avoids unnecessary processing.
+                        if (text.isBlank()) {
+                            _translatedText.emit(text)
+                            return@collect
+                        }
+
                         val translated = translator?.translate(text)?.await()
                         if (translated != null) {
                             _translatedText.emit(translated)

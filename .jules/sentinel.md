@@ -44,3 +44,7 @@
 **Vulnerability:** Extracted partial files may persist on disk after an extraction exception.
 **Learning:** If the extraction process fails or is interrupted, the partially extracted target directory is left in a corrupted state, potentially leading to disk resource exhaustion or a persistent corrupted state within the application's file storage.
 **Prevention:** Track extraction success and ensure the entire partially extracted target directory is deleted (e.g., using a `finally` block with `deleteRecursively()`) if the process fails to complete.
+## 2024-05-24 - [Fix DoS Resource Exhaustion in OkHttp Network Calls]
+**Vulnerability:** The OkHttp `Response` body was consumed as an `InputStream`, but the `Response` itself was never explicitly closed. This leads to connection pool resource leaks and potential Denial of Service (DoS) due to unreleased connections.
+**Learning:** OkHttp connections are kept alive by default. If a `Response` is not closed (or if its body stream is not fully consumed and closed automatically), the connection is never returned to the shared pool, leading to resource exhaustion, especially when downloading multiple large model files.
+**Prevention:** Always wrap OkHttp network calls executing requests inside a `try-with-resources` construct (like Kotlin's `.use { response -> ... }`) to guarantee the underlying response and connection are released properly, even if exceptions are thrown mid-download.

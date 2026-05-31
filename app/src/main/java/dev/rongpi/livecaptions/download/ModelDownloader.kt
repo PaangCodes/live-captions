@@ -59,24 +59,25 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw Exception("Failed to download file: ${response.code}")
-            }
-
-            val body = response.body ?: throw Exception("Empty response body")
-            val totalBytes = body.contentLength()
-            val inputStream: InputStream = body.byteStream()
 
             if (!targetDir.exists()) {
                 targetDir.mkdirs()
             }
 
-            val tempZipFile = File(context.filesDir, "$targetDirName.zip")
-            val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
+        val tempZipFile = File(context.filesDir, "$targetDirName.zip")
+        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
-            var success = false
-            try {
+        var success = false
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw Exception("Failed to download file: ${response.code}")
+                }
+
+                val body = response.body ?: throw Exception("Empty response body")
+                val totalBytes = body.contentLength()
+                val inputStream: InputStream = body.byteStream()
+
                 // 1. Download to temporary zip file, tracking accurate compressed bytes.
                 FileOutputStream(tempZipFile).use { fos ->
                     val buffer = ByteArray(8192)
@@ -190,24 +191,25 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw Exception("Failed to download file: ${response.code}")
-            }
-
-            val body = response.body ?: throw Exception("Empty response body")
-            val totalBytes = body.contentLength()
-            val inputStream: InputStream = body.byteStream()
 
             val parent = targetFile.parentFile
             if (parent != null && !parent.exists() && !parent.mkdirs()) {
                  throw Exception("Failed to create directory $parent")
             }
 
-            val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
+        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
-            var success = false
-            try {
+        var success = false
+        try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw Exception("Failed to download file: ${response.code}")
+                }
+
+                val body = response.body ?: throw Exception("Empty response body")
+                val totalBytes = body.contentLength()
+                val inputStream: InputStream = body.byteStream()
+
                 FileOutputStream(targetFile).use { fos ->
                     val buffer = ByteArray(8192)
                     var downloadedBytes = 0L

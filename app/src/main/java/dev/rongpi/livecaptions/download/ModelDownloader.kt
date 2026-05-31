@@ -60,9 +60,15 @@ open class ModelDownloader {
 
         val request = Request.Builder().url(url).build()
 
-        var success = false
-        val tempZipFile = File(context.filesDir, "$targetDirName.zip")
+            if (!targetDir.exists()) {
+                targetDir.mkdirs()
+            }
 
+                if (!targetDir.exists()) {
+                    targetDir.mkdirs()
+                }
+
+        var success = false
         try {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
@@ -72,12 +78,6 @@ open class ModelDownloader {
                 val body = response.body ?: throw Exception("Empty response body")
                 val totalBytes = body.contentLength()
                 val inputStream: InputStream = body.byteStream()
-
-                if (!targetDir.exists()) {
-                    targetDir.mkdirs()
-                }
-
-                val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
                 // 1. Download to temporary zip file, tracking accurate compressed bytes.
                 FileOutputStream(tempZipFile).use { fos ->
@@ -105,77 +105,77 @@ open class ModelDownloader {
                         }
                     }
                 }
-            }
 
-            // 2. Extract after download finishes
-            ZipInputStream(BufferedInputStream(tempZipFile.inputStream())).use { zis ->
-                var zipEntry = zis.nextEntry
-                val buffer = ByteArray(8192)
+                // 2. Extract after download finishes
+                ZipInputStream(BufferedInputStream(tempZipFile.inputStream())).use { zis ->
+                    var zipEntry = zis.nextEntry
+                    val buffer = ByteArray(8192)
 
-                var totalUncompressedBytes = 0L
-                var fileCount = 0
-                val maxUncompressedBytes = 1024L * 1024L * 1024L // 1 GB limit
-                val maxFileCount = 10000
+                    var totalUncompressedBytes = 0L
+                    var fileCount = 0
+                    val maxUncompressedBytes = 1024L * 1024L * 1024L // 1 GB limit
+                    val maxFileCount = 10000
 
-                // ⚡ Bolt Optimization: Pre-compute target directory canonical path
-                // Resolving the canonical path involves file system I/O. Extracting this outside
-                // the loop avoids redundant disk access for every file in the zip archive.
-                val targetDirPath = targetDir.canonicalPath + File.separator
+                    // ⚡ Bolt Optimization: Pre-compute target directory canonical path
+                    // Resolving the canonical path involves file system I/O. Extracting this outside
+                    // the loop avoids redundant disk access for every file in the zip archive.
+                    val targetDirPath = targetDir.canonicalPath + File.separator
 
-                while (zipEntry != null) {
-                    fileCount++
-                    if (fileCount > maxFileCount) {
-                        throw SecurityException("Zip bomb detected: too many files")
-                    }
-
-                    val newFile = File(targetDir, zipEntry.name)
-
-                    // Prevent Zip Slip vulnerability
-                    if (!newFile.canonicalPath.startsWith(targetDirPath)) {
-                        throw Exception("Entry is outside of the target dir: ${zipEntry.name}")
-                    }
-
-                    if (zipEntry.isDirectory) {
-                        if (!newFile.isDirectory && !newFile.mkdirs()) {
-                            throw Exception("Failed to create directory $newFile")
-                        }
-                    } else {
-                        val parent = newFile.parentFile
-                        if (parent != null && !parent.isDirectory && !parent.mkdirs()) {
-                            throw Exception("Failed to create directory $parent")
+                    while (zipEntry != null) {
+                        fileCount++
+                        if (fileCount > maxFileCount) {
+                            throw SecurityException("Zip bomb detected: too many files")
                         }
 
-                        var extractionSuccess = false
-                        try {
-                            FileOutputStream(newFile).use { fos ->
-                                var len: Int
-                                while (zis.read(buffer).also { len = it } > 0) {
-                                    totalUncompressedBytes += len
-                                    if (totalUncompressedBytes > maxUncompressedBytes) {
-                                        throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                        val newFile = File(targetDir, zipEntry.name)
+
+                        // Prevent Zip Slip vulnerability
+                        if (!newFile.canonicalPath.startsWith(targetDirPath)) {
+                            throw Exception("Entry is outside of the target dir: ${zipEntry.name}")
+                        }
+
+                        if (zipEntry.isDirectory) {
+                            if (!newFile.isDirectory && !newFile.mkdirs()) {
+                                throw Exception("Failed to create directory $newFile")
+                            }
+                        } else {
+                            val parent = newFile.parentFile
+                            if (parent != null && !parent.isDirectory && !parent.mkdirs()) {
+                                throw Exception("Failed to create directory $parent")
+                            }
+
+                            var extractionSuccess = false
+                            try {
+                                FileOutputStream(newFile).use { fos ->
+                                    var len: Int
+                                    while (zis.read(buffer).also { len = it } > 0) {
+                                        totalUncompressedBytes += len
+                                        if (totalUncompressedBytes > maxUncompressedBytes) {
+                                            throw SecurityException("Zip bomb detected: exceeds maximum uncompressed size")
+                                        }
+                                        fos.write(buffer, 0, len)
                                     }
-                                    fos.write(buffer, 0, len)
+                                }
+                                extractionSuccess = true
+                            } finally {
+                                if (!extractionSuccess && newFile.exists()) {
+                                    newFile.delete()
                                 }
                             }
-                            extractionSuccess = true
-                        } finally {
-                            if (!extractionSuccess && newFile.exists()) {
-                                newFile.delete()
-                            }
                         }
+                        zipEntry = zis.nextEntry
                     }
-                    zipEntry = zis.nextEntry
+                    zis.closeEntry()
                 }
-                zis.closeEntry()
-            }
-            success = true
-        } finally {
-            // 3. Clean up the temp zip file
-            if (tempZipFile.exists()) {
-                tempZipFile.delete()
-            }
-            if (!success && targetDir.exists()) {
-                targetDir.deleteRecursively()
+                success = true
+            } finally {
+                // 3. Clean up the temp zip file
+                if (tempZipFile.exists()) {
+                    tempZipFile.delete()
+                }
+                if (!success && targetDir.exists()) {
+                    targetDir.deleteRecursively()
+                }
             }
         }
     }.flowOn(Dispatchers.IO)
@@ -193,6 +193,16 @@ open class ModelDownloader {
 
         val request = Request.Builder().url(url).build()
 
+            val parent = targetFile.parentFile
+            if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                 throw Exception("Failed to create directory $parent")
+            }
+
+                val parent = targetFile.parentFile
+                if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                     throw Exception("Failed to create directory $parent")
+                }
+
         var success = false
         try {
             client.newCall(request).execute().use { response ->
@@ -203,13 +213,6 @@ open class ModelDownloader {
                 val body = response.body ?: throw Exception("Empty response body")
                 val totalBytes = body.contentLength()
                 val inputStream: InputStream = body.byteStream()
-
-                val parent = targetFile.parentFile
-                if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                     throw Exception("Failed to create directory $parent")
-                }
-
-                val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
                 FileOutputStream(targetFile).use { fos ->
                     val buffer = ByteArray(8192)
@@ -236,11 +239,11 @@ open class ModelDownloader {
                         }
                     }
                 }
-            }
-            success = true
-        } finally {
-            if (!success && targetFile.exists()) {
-                targetFile.delete()
+                success = true
+            } finally {
+                if (!success && targetFile.exists()) {
+                    targetFile.delete()
+                }
             }
         }
     }.flowOn(Dispatchers.IO)

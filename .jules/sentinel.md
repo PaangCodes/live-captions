@@ -45,6 +45,10 @@
 **Learning:** If the extraction process fails or is interrupted, the partially extracted target directory is left in a corrupted state, potentially leading to disk resource exhaustion or a persistent corrupted state within the application's file storage.
 **Prevention:** Track extraction success and ensure the entire partially extracted target directory is deleted (e.g., using a `finally` block with `deleteRecursively()`) if the process fails to complete.
 
+## 2024-05-24 - DoS vulnerability via unclosed OkHttp Connections
+**Vulnerability:** The application was vulnerable to connection pool exhaustion (Denial of Service) when downloading STT models. `OkHttpClient.newCall(request).execute()` returned an OkHttp `Response` object that was never explicitly closed. If errors occurred during body processing (e.g., download size limits exceeded, network IO exceptions) or when downloads finished naturally, the underlying network connection remained held in the OkHttp connection pool, eventually exhausting available resources.
+**Learning:** OkHttp automatically closes the response body *only* if you use specific convenience methods. When operating on raw `InputStream` streams manually via `response.body?.byteStream()`, OkHttp expects the caller to manually release the connection back to the pool by closing the response body.
+**Prevention:** Always wrap `client.newCall(request).execute()` in a `.use { response -> ... }` block in Kotlin (or a `try-with-resources` block in Java). This ensures that the response's body is automatically closed, regardless of success, intermediate exceptions, or early returns, preventing resource leak vulnerabilities.
 ## 2024-05-17 - Unclosed OkHttp Responses
 **Vulnerability:** OkHttp responses were not being explicitly closed during model downloads (`client.newCall(request).execute()`), leading to connection pool exhaustion and potential Denial of Service (DoS) under multiple connection attempts.
 **Learning:** In Kotlin/Android, network connections via OkHttp must be manually released back to the connection pool by closing the response or its body, even if an exception occurs.

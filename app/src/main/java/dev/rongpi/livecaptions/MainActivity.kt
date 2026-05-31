@@ -376,14 +376,6 @@ class MainActivity : ComponentActivity() {
         val isTransReady = transState == null || transState.value is TranslationState.Ready
         val isEnabled = isSttReady && isTransReady
 
-        val buttonText = when {
-            sttState is SttState.Downloading -> "Downloading STT Model..."
-            transState?.value is TranslationState.DownloadingModel -> "Downloading Language Model..."
-            sttState is SttState.Initializing -> "Initializing Engine..."
-            else -> "Start Live Captions"
-        }
-        val showLoading = sttState is SttState.Downloading || transState?.value is TranslationState.DownloadingModel || sttState is SttState.Initializing
-
         Button(
             onClick = onStart,
             modifier = Modifier.fillMaxWidth(),
@@ -427,9 +419,49 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun SttConfigCard(selectedStt: String, onSttSelected: (String) -> Unit, engine: SttEngine) {
+    private fun SttStatusDisplay(engine: SttEngine) {
         val sttState by engine.state.collectAsState()
 
+        val (sttStatusText, sttStatusColor) = when (sttState) {
+            is SttState.Uninitialized -> "Uninitialized" to MaterialTheme.colorScheme.onSurfaceVariant
+            is SttState.Initializing -> "Initializing Engine..." to MaterialTheme.colorScheme.onSurfaceVariant
+            is SttState.Downloading -> "Downloading Model..." to MaterialTheme.colorScheme.primary
+            is SttState.Ready -> "Ready" to MaterialTheme.colorScheme.primary
+            is SttState.Listening -> "Listening" to MaterialTheme.colorScheme.primary
+            is SttState.Error -> "Error: ${(sttState as SttState.Error).message}" to MaterialTheme.colorScheme.error
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Status: ", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = sttStatusText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = sttStatusColor,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+            )
+        }
+
+        if (sttState is SttState.Initializing) {
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else if (sttState is SttState.Downloading) {
+            val dl = sttState as SttState.Downloading
+            val progress = if (dl.totalBytes > 0) dl.downloadedBytes.toFloat() / dl.totalBytes else 0f
+            val mbDownloaded = dl.downloadedBytes / (1024 * 1024)
+            val mbTotal = dl.totalBytes / (1024 * 1024)
+
+            Spacer(modifier = Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text("$mbDownloaded MB / $mbTotal MB")
+        }
+    }
+
+    @Composable
+    private fun SttConfigCard(selectedStt: String, onSttSelected: (String) -> Unit, engine: SttEngine) {
         ElevatedCard(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -483,42 +515,7 @@ class MainActivity : ComponentActivity() {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                val (sttStatusText, sttStatusColor) = when (sttState) {
-                    is SttState.Uninitialized -> "Uninitialized" to MaterialTheme.colorScheme.onSurfaceVariant
-                    is SttState.Initializing -> "Initializing Engine..." to MaterialTheme.colorScheme.onSurfaceVariant
-                    is SttState.Downloading -> "Downloading Model..." to MaterialTheme.colorScheme.primary
-                    is SttState.Ready -> "Ready" to MaterialTheme.colorScheme.primary
-                    is SttState.Listening -> "Listening" to MaterialTheme.colorScheme.primary
-                    is SttState.Error -> "Error: ${(sttState as SttState.Error).message}" to MaterialTheme.colorScheme.error
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Status: ", style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        text = sttStatusText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = sttStatusColor,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                    )
-                }
-
-                if (sttState is SttState.Initializing) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else if (sttState is SttState.Downloading) {
-                    val dl = sttState as SttState.Downloading
-                    val progress = if (dl.totalBytes > 0) dl.downloadedBytes.toFloat() / dl.totalBytes else 0f
-                    val mbDownloaded = dl.downloadedBytes / (1024 * 1024)
-                    val mbTotal = dl.totalBytes / (1024 * 1024)
-
-                    Spacer(modifier = Modifier.height(4.dp))
-                    LinearProgressIndicator(
-                        progress = progress,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text("$mbDownloaded MB / $mbTotal MB")
-                }
+                SttStatusDisplay(engine = engine)
             }
         }
     }

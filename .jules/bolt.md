@@ -38,6 +38,9 @@
 ## 2026-05-19 - Zero-Allocation Audio Processing
  **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
  **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.
+## 2024-05-20 - Avoid JNI boundary crossing overhead for blank text
+ **Learning:** Translation libraries usually rely on JNI bindings for model inference. Sending empty/blank payloads often emitted by STT engines during speech pauses to the translator introduces unnecessary coroutine suspension and JNI boundary crossing overhead.
+ **Action:** Add early return `if (text.isBlank()) return` to prevent unnecessary method calls.
 ## 2026-05-19 - JNI Boundary Crossing Overhead for Empty Payloads
 **Learning:** Calling JNI-bound ML Kit translation APIs (like `translator?.translate(text)?.await()`) for blank or empty text payloads incurs unnecessary coroutine suspension and native boundary crossing overhead (measured at ~1ms per call, even if the result is empty). STT engines emit empty strings frequently during pauses in speech.
 **Action:** When integrating with native ML libraries, always bypass the JNI boundary with an early return (e.g., `if (text.isBlank()) return`) for simple, predictable edge cases like empty strings.

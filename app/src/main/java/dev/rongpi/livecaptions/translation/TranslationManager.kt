@@ -136,6 +136,13 @@ class TranslationManager(
             // Use distinctUntilChanged to avoid translating the exact same text again.
             // Use conflate so if translation is slow, we drop stale intermediate strings and translate the latest.
             textStream.distinctUntilChanged().conflate().collect { text ->
+                // ⚡ Bolt Optimization: Bypass unnecessary coroutine suspension and JNI boundary crossing overhead
+                // for empty/blank payloads often emitted by STT engines during speech pauses.
+                if (text.isBlank()) {
+                    _translatedText.emit(text)
+                    return@collect
+                }
+
                 if (_state.value is TranslationState.Ready) {
                     if (text.isBlank()) {
                         // ⚡ Bolt Optimization: Bypass JNI and suspend overhead

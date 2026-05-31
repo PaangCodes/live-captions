@@ -39,4 +39,45 @@ class TranslationManagerPerfTest {
         println("With Set (O(1)): ${timeWithSetDirectly / iterations} ns per iteration")
         println("==============================================")
     }
+
+    @Test
+    fun benchmarkEmptyTextJniBypass() {
+        val iterations = 100000
+
+        var timeWithJniCall = 0L
+        var timeWithBypass = 0L
+
+        // Warmup
+        for (i in 1..10000) {
+            dummyTranslateCallWithJni("   ")
+            dummyTranslateCallWithBypass("   ")
+        }
+
+        for (i in 1..iterations) {
+            timeWithJniCall += measureNanoTime {
+                dummyTranslateCallWithJni("   ")
+            }
+            timeWithBypass += measureNanoTime {
+                dummyTranslateCallWithBypass("   ")
+            }
+        }
+
+        println("================ PERF RESULTS (Empty Text) ================")
+        println("With simulated JNI suspension: ${timeWithJniCall / iterations} ns per iteration")
+        println("With ⚡ Bolt bypass: ${timeWithBypass / iterations} ns per iteration")
+        println("===========================================================")
+    }
+
+    private fun dummyTranslateCallWithJni(text: String): String {
+        // Simulate some minor overhead before returning input to mimic
+        // setup/dispatch overhead (though true JNI would be much worse).
+        Thread.sleep(0, 100) // 100 nanoseconds dummy sleep
+        return text
+    }
+
+    private fun dummyTranslateCallWithBypass(text: String): String {
+        if (text.isBlank()) return text
+        Thread.sleep(0, 100) // Unreachable for empty text
+        return text
+    }
 }

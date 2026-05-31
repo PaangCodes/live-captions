@@ -48,3 +48,37 @@
 **Vulnerability:** Connection pool resource exhaustion (Denial of Service) risk in download functions.
 **Learning:** OkHttp responses must be explicitly closed to return the connection back to the pool, even if the body stream is read.
 **Prevention:** Always wrap `execute()` calls in `.use { response -> ... }` blocks.
+## 2025-02-12 - [Connection Pool Exhaustion Prevention]
+**Vulnerability:** `OkHttpClient` responses (`client.newCall(request).execute()`) were not explicitly closed, causing potential connection leaks and resource exhaustion (Denial of Service risk).
+**Learning:** In Kotlin/Java network calls via OkHttp, unclosed responses leak connection resources from the client pool and file descriptors, potentially hanging or crashing the application under repeated network use.
+**Prevention:** Always wrap synchronous OkHttp calls `client.newCall(request).execute()` in a `try-with-resources` or Kotlin `.use { response -> }` block to guarantee correct stream termination and resource reclamation.
+
+## 2026-05-24 - [Fix OkHttp Response Leaks in ModelDownloader]
+**Vulnerability:** OkHttp `Response` objects were not being closed after downloading files in `ModelDownloader.kt`, leading to potential connection pool exhaustion and DoS.
+**Learning:** OkHttp responses must always be explicitly closed, even if the body stream is fully consumed.
+**Prevention:** Use a `try-with-resources` block (or Kotlin's `.use { response -> ... }`) to ensure the underlying connection is released back to the pool, regardless of success or intermediate exceptions.
+## 2024-05-23 - Prevent Resource Exhaustion with OkHttp
+**Vulnerability:** Connection leak / resource exhaustion due to unclosed OkHttp Response objects in `ModelDownloader.kt`.
+**Learning:** When using `client.newCall(request).execute()`, the underlying connection is not automatically released. Failing to close the response body can lead to connection pool exhaustion and DoS.
+**Prevention:** Always wrap `client.newCall(request).execute()` in a `try-with-resources` block (or Kotlin's `.use { response -> ... }`) to ensure the response body is safely closed and the connection is released.
+## 2024-05-25 - [Prevent Connection Leaks in OkHttp]
+**Vulnerability:** The application executed network requests with OkHttpClient without closing the returned `Response` objects.
+**Learning:** Failing to close OkHttp `Response` objects keeps network connections open and leads to connection pool resource exhaustion, which can result in an application crash (Denial of Service).
+**Prevention:** Always wrap `client.newCall(request).execute()` in a `try-with-resources` or Kotlin `.use { response -> ... }` block to ensure connections are released.
+## 2026-05-20 - Unclosed OkHttp Responses Causing DoS
+**Vulnerability:** OkHttp responses are not being closed in ModelDownloader.kt.
+**Learning:** Unclosed OkHttp Response objects can lead to connection pool resource exhaustion and Denial of Service (DoS) vulnerabilities, stalling network connections.
+**Prevention:** Always explicitly close OkHttp Response objects by wrapping client.newCall(request).execute() in a .use { response -> ... } block.
+
+## 2024-05-24 - DoS vulnerability via unclosed OkHttp Connections
+**Vulnerability:** The application was vulnerable to connection pool exhaustion (Denial of Service) when downloading STT models. `OkHttpClient.newCall(request).execute()` returned an OkHttp `Response` object that was never explicitly closed. If errors occurred during body processing (e.g., download size limits exceeded, network IO exceptions) or when downloads finished naturally, the underlying network connection remained held in the OkHttp connection pool, eventually exhausting available resources.
+**Learning:** OkHttp automatically closes the response body *only* if you use specific convenience methods. When operating on raw `InputStream` streams manually via `response.body?.byteStream()`, OkHttp expects the caller to manually release the connection back to the pool by closing the response body.
+**Prevention:** Always wrap `client.newCall(request).execute()` in a `.use { response -> ... }` block in Kotlin (or a `try-with-resources` block in Java). This ensures that the response's body is automatically closed, regardless of success, intermediate exceptions, or early returns, preventing resource leak vulnerabilities.
+## 2024-05-17 - Unclosed OkHttp Responses
+**Vulnerability:** OkHttp responses were not being explicitly closed during model downloads (`client.newCall(request).execute()`), leading to connection pool exhaustion and potential Denial of Service (DoS) under multiple connection attempts.
+**Learning:** In Kotlin/Android, network connections via OkHttp must be manually released back to the connection pool by closing the response or its body, even if an exception occurs.
+**Prevention:** Always wrap `client.newCall(request).execute()` in a `try-with-resources` or `.use { response -> ... }` block to guarantee connection release.
+## 2024-05-24 - [Fix DoS Resource Exhaustion in OkHttp Network Calls]
+**Vulnerability:** The OkHttp `Response` body was consumed as an `InputStream`, but the `Response` itself was never explicitly closed. This leads to connection pool resource leaks and potential Denial of Service (DoS) due to unreleased connections.
+**Learning:** OkHttp connections are kept alive by default. If a `Response` is not closed (or if its body stream is not fully consumed and closed automatically), the connection is never returned to the shared pool, leading to resource exhaustion, especially when downloading multiple large model files.
+**Prevention:** Always wrap OkHttp network calls executing requests inside a `try-with-resources` construct (like Kotlin's `.use { response -> ... }`) to guarantee the underlying response and connection are released properly, even if exceptions are thrown mid-download.

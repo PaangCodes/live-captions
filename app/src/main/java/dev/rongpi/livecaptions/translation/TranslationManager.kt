@@ -41,7 +41,8 @@ class TranslationManager(
 
     private var translator: Translator? = null
     private var translateJob: Job? = null
-    private val modelManager = RemoteModelManager.getInstance()
+    // Lazy init to allow mocking in unit tests without crashing on MlKitContext
+    private val modelManager by lazy { RemoteModelManager.getInstance() }
 
     init {
         refreshDownloadedLanguages()

@@ -7,6 +7,9 @@
 **Action:** Always isolate high-frequency state reads into the lowest possible child `@Composable` functions (e.g., isolating `Start`/`Stop` buttons into their own `LiveCaptionControls` composable). This ensures only that specific small sub-tree recomposes when the state changes.
 
 ## 2026-05-19 - Reduce System.currentTimeMillis Overhead
+## 2026-05-17 - Reduce System.currentTimeMillis Overhead
+## 2026-05-24 - Reduce System.currentTimeMillis Overhead
+## 2025-05-15 - Reduce System.currentTimeMillis Overhead
 **Learning:** Initializing the tracking timestamp (`lastEmitTime`) to 0 instead of the current system time in a throttling logic bypasses rate limiting for the very first event, executing it instantly.
 **Action:** When implementing time-throttling in high-frequency loops (like download progress), always initialize `lastEmitTime = System.currentTimeMillis()`.
 
@@ -20,6 +23,9 @@
  **Learning:** Resolving `File.canonicalPath` inside a tight loop (like extracting a zip archive) causes severe performance degradation due to redundant file system I/O.
  **Action:** Pre-computed the `targetDir.canonicalPath + File.separator` outside the `while` loop in `ModelDownloader.kt` and used the cached variable for the Zip Slip validation check inside the loop. Reduced extraction time by ~11.7% (~110ms improvement on a 5000-file mock zip).
 ## 2026-05-19 - Eliminate ByteArray.copyOf() Allocation
+## 2026-05-17 - Eliminate ByteArray.copyOf() Allocation
+## 2026-05-24 - Eliminate ByteArray.copyOf() Allocation
+## 2025-05-15 - Eliminate ByteArray.copyOf() Allocation
  **Learning:** In high-frequency loops like `AudioRecord` capture, constantly using `ByteArray.copyOf()` generates significant temporary memory allocations. This increases Garbage Collection (GC) overhead and can cause audio stuttering.
  **Action:** Update processing interfaces like `processAudio(data, offset, length)` to accept the raw array slice instead of making full array copies.
 
@@ -35,3 +41,33 @@
 ## 2026-05-19 - JNI Boundary Crossing Overhead for Empty Payloads
 **Learning:** Calling JNI-bound ML Kit translation APIs (like `translator?.translate(text)?.await()`) for blank or empty text payloads incurs unnecessary coroutine suspension and native boundary crossing overhead (measured at ~1ms per call, even if the result is empty). STT engines emit empty strings frequently during pauses in speech.
 **Action:** When integrating with native ML libraries, always bypass the JNI boundary with an early return (e.g., `if (text.isBlank()) return`) for simple, predictable edge cases like empty strings.
+## 2026-05-17 - Zero-Allocation Audio Processing in Capture Loop
+ **Learning:** In high-frequency loop systems like `AudioCaptureService`, reading fixed-size chunks of data from a hardware source (`AudioRecord`) and calling `ByteArray.copyOf(read)` allocates a new memory block on every iteration. This creates constant, massive GC pressure and micro-stutters during processing.
+ **Action:** Instead of allocating new arrays, pass the pre-allocated reusable `buffer` array directly into the `processAudio` method alongside its `offset` (usually 0) and valid `length` (`read`). This enables zero-allocation processing for continuous I/O streams.
+## 2026-05-17 - Zero-Allocation Audio Processing
+ **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
+ **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.
+## $(date +%Y-%m-%d) - Bypass JNI and Coroutine Overhead for Blank Text Payloads
+**Learning:** STT engines frequently emit empty or blank strings during speech pauses. Passing these empty strings to ML Kit's translation engine (`translator?.translate(text)?.await()`) incurs unnecessary JNI boundary crossing and coroutine suspension overhead without yielding useful translations.
+**Action:** When connecting a high-frequency STT string stream to a translation backend, always add an early return bypass (`if (text.isBlank())`) to emit the blank text directly and skip the heavy translation API calls.
+## 2026-05-17 - Bypass JNI Overhead for STT Pauses
+ **Learning:** When STT engines emit empty or blank strings during speech pauses, sending these through `translator?.translate()` incurs unnecessary Coroutine suspension and JNI boundary crossing overhead, slowing down the processing loop.
+ **Action:** Implemented an early return (`if (text.isBlank())`) in `TranslationManager.kt` to bypass ML Kit's translation entirely for blank payloads.
+## 2026-05-24 - Zero-Allocation Audio Processing in Capture Loop
+ **Learning:** In high-frequency loop systems like `AudioCaptureService`, reading fixed-size chunks of data from a hardware source (`AudioRecord`) and calling `ByteArray.copyOf(read)` allocates a new memory block on every iteration. This creates constant, massive GC pressure and micro-stutters during processing.
+ **Action:** Instead of allocating new arrays, pass the pre-allocated reusable `buffer` array directly into the `processAudio` method alongside its `offset` (usually 0) and valid `length` (`read`). This enables zero-allocation processing for continuous I/O streams.
+## 2026-05-24 - Zero-Allocation Audio Processing
+ **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
+ **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.
+## 2026-05-24 - Bypass JNI overhead for empty STT emissions
+**Learning:** STT engines often emit empty or blank text during speech pauses. Sending these empty strings through the ML Kit Translation API incurs unnecessary coroutine suspension and costly JNI boundary crossing overhead.
+**Action:** Added an early return `if (text.isBlank())` in `TranslationManager.kt`'s translation stream processing. It directly emits the blank text downstream (to clear stale captions) and skips the JNI translation call, improving battery and performance during silence.
+## 2025-05-15 - Zero-Allocation Audio Processing in Capture Loop
+ **Learning:** In high-frequency loop systems like `AudioCaptureService`, reading fixed-size chunks of data from a hardware source (`AudioRecord`) and calling `ByteArray.copyOf(read)` allocates a new memory block on every iteration. This creates constant, massive GC pressure and micro-stutters during processing.
+ **Action:** Instead of allocating new arrays, pass the pre-allocated reusable `buffer` array directly into the `processAudio` method alongside its `offset` (usually 0) and valid `length` (`read`). This enables zero-allocation processing for continuous I/O streams.
+## 2025-05-15 - Zero-Allocation Audio Processing
+ **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
+ **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.
+## 2025-05-15 - Jetpack Compose State Isolation
+**Learning:** Extracting STT state updates to a child component isolates recompositions, significantly enhancing performance during rapid state updates and preventing the entire `SttConfigCard` from unnecessary re-rendering. This optimizes UI performance, particularly when STT engine emits progress.
+**Action:** Extract the status and progress reporting logic to a custom `@Composable` function inside parents that would otherwise suffer from rapid high-frequency re-rendering.

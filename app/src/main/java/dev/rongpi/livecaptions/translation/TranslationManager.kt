@@ -144,7 +144,21 @@ class TranslationManager(
                 }
 
                 if (_state.value is TranslationState.Ready) {
+                    if (text.isBlank()) {
+                        // ⚡ Bolt Optimization: Bypass JNI and suspend overhead
+                        // STT engines frequently emit empty strings during speech pauses.
+                        // Early returning here saves significant ML Kit processing latency.
+                        _translatedText.emit(text)
+                        return@collect
+                    }
                     try {
+                        // ⚡ Bolt Optimization: Bypass JNI boundary overhead for blank text
+                        // Emit blank downstream immediately to clear stale UI captions.
+                        if (text.isBlank()) {
+                            _translatedText.emit(text)
+                            return@collect
+                        }
+
                         val translated = translator?.translate(text)?.await()
                         if (translated != null) {
                             _translatedText.emit(translated)

@@ -138,16 +138,16 @@ class TranslationManager(
             textStream.distinctUntilChanged().conflate().collect { text ->
                 if (_state.value is TranslationState.Ready) {
                     try {
-                        // ⚡ Bolt Optimization: Early return for blank text
-                        // Bypasses unnecessary coroutine suspension and JNI boundary crossing overhead
-                        // during speech pauses when the STT engine emits blank strings.
+                        // ⚡ Bolt Optimization: Bypass JNI boundary overhead for blank text
+                        // Emit blank downstream immediately to clear stale UI captions.
                         if (text.isBlank()) {
                             _translatedText.emit(text)
-                        } else {
-                            val translated = translator?.translate(text)?.await()
-                            if (translated != null) {
-                                _translatedText.emit(translated)
-                            }
+                            return@collect
+                        }
+
+                        val translated = translator?.translate(text)?.await()
+                        if (translated != null) {
+                            _translatedText.emit(translated)
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Exception during translation", e)

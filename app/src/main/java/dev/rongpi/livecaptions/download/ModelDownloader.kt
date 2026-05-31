@@ -64,8 +64,9 @@ open class ModelDownloader {
                 targetDir.mkdirs()
             }
 
-        val tempZipFile = File(context.filesDir, "$targetDirName.zip")
-        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
+                if (!targetDir.exists()) {
+                    targetDir.mkdirs()
+                }
 
         var success = false
         try {
@@ -197,7 +198,10 @@ open class ModelDownloader {
                  throw Exception("Failed to create directory $parent")
             }
 
-        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
+                val parent = targetFile.parentFile
+                if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                     throw Exception("Failed to create directory $parent")
+                }
 
         var success = false
         try {

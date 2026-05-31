@@ -38,6 +38,9 @@
 ## 2026-05-19 - Zero-Allocation Audio Processing
  **Learning:** In high-frequency capture loops (like `AudioRecord.read`), constantly allocating new objects (e.g., `buffer.copyOf(read)`) creates severe GC pressure and can cause execution stutter.
  **Action:** Instead of creating defensive copies, pass the backing buffer directly down the pipeline along with `offset` and `length` parameters (e.g., `processAudio(data, offset, length)`) to achieve zero-allocation processing.
+## $(date +%Y-%m-%d) - Prevent JNI Overhead for Empty Data Streams
+ **Learning:** In high-frequency, stream-based text processing (like translating STT outputs), sending blank or empty strings to native libraries (e.g., via JNI or coroutine bridges like `translator?.translate(text)?.await()`) incurs massive, redundant computational overhead. STT engines frequently emit empty strings during speech pauses.
+ **Action:** Always implement an early return condition (`if (text.isBlank())`) before hitting heavy asynchronous processing boundaries to dramatically reduce CPU wake-ups and unnecessary task scheduling. Ensure the blank result is still emitted down the pipeline so UI components can clear out stale data accurately.
 ## 2025-02-12 - Eliminate Translation JNI Bottleneck for Blank Texts
  **Learning:** When sending data to ML Kit or other JNI-bound APIs, processing blank or empty payloads (often emitted by STT engines during speech pauses) incurs unnecessary coroutine suspension and JNI boundary crossing overhead, slowing down the processing pipeline.
  **Action:** Bypass unnecessary JNI boundary crossing overhead by using an early return for empty/blank payloads. Crucially, still emit the blank text downstream (e.g., `_translatedText.emit(text)`) before returning so the UI correctly clears stale captions.

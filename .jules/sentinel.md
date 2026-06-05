@@ -82,3 +82,8 @@
 **Vulnerability:** The OkHttp `Response` body was consumed as an `InputStream`, but the `Response` itself was never explicitly closed. This leads to connection pool resource leaks and potential Denial of Service (DoS) due to unreleased connections.
 **Learning:** OkHttp connections are kept alive by default. If a `Response` is not closed (or if its body stream is not fully consumed and closed automatically), the connection is never returned to the shared pool, leading to resource exhaustion, especially when downloading multiple large model files.
 **Prevention:** Always wrap OkHttp network calls executing requests inside a `try-with-resources` construct (like Kotlin's `.use { response -> ... }`) to guarantee the underlying response and connection are released properly, even if exceptions are thrown mid-download.
+
+## $(date +%Y-%m-%d) - Fix syntax and undeclared variables
+ **Vulnerability:** Code wouldn't compile due to syntax errors (unbalanced `try-finally` blocks) and undeclared variables (`tempZipFile` and `maxDownloadBytes`). This leaves the download mechanisms broken and potentially un-tunable for security limits.
+ **Learning:** When a `try` block encapsulates an OkHttp `.use { ... }` lambda, modifying the end to `} } finally {` successfully closes the nested lambda and `try` block. However, the original closing brace for the `try` block remains orphaned further down the file, incorrectly closing the encompassing `flow` builder prematurely and causing "Expecting a top level declaration" errors.
+ **Prevention:** Write a Python brace parser script (e.g., `parse_braces.py`) to systematically check for brace imbalances, and always trace structural scopes completely to the end of the method before applying block-level Git merge diffs.

@@ -45,7 +45,7 @@ class WhisperSttEngineTest {
 
         mockConfig = SttConfig(context = mockContext, modelPath = "test", sampleRate = 16000)
 
-        sttEngine = WhisperSttEngine(coroutineScope = testScope, modelDownloader = fakeDownloader)
+        sttEngine = WhisperSttEngine(coroutineScope = testScope, modelDownloader = fakeDownloader, ioDispatcher = testDispatcher)
     }
 
     @Test

@@ -87,3 +87,7 @@
  **Vulnerability:** Code wouldn't compile due to syntax errors (unbalanced `try-finally` blocks) and undeclared variables (`tempZipFile` and `maxDownloadBytes`). This leaves the download mechanisms broken and potentially un-tunable for security limits.
  **Learning:** When a `try` block encapsulates an OkHttp `.use { ... }` lambda, modifying the end to `} } finally {` successfully closes the nested lambda and `try` block. However, the original closing brace for the `try` block remains orphaned further down the file, incorrectly closing the encompassing `flow` builder prematurely and causing "Expecting a top level declaration" errors.
  **Prevention:** Write a Python brace parser script (e.g., `parse_braces.py`) to systematically check for brace imbalances, and always trace structural scopes completely to the end of the method before applying block-level Git merge diffs.
+## 2026-06-06 - Prevent stack trace leakage in logs
+**Vulnerability:** Passing full exception objects `e` to `Log.e` prints raw stack traces to system logs (`System.err`), potentially leaking sensitive internal implementation details to other apps or physical attackers.
+**Learning:** To avoid information leakage, logs should only contain descriptive error messages and `e.message` rather than the full stack trace `e`.
+**Prevention:** Always log `e.message` or omit the exception entirely if a static string is sufficient, rather than passing the `Exception` object to Android's logging framework.

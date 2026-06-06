@@ -49,7 +49,7 @@ class VoskSttEngine(
                     }
                     _state.value = SttState.Ready
                 } catch (e: Exception) {
-                    Log.e("VoskSttEngine", "Exception initializing Vosk model", e)
+                    Log.e("VoskSttEngine", "Exception initializing Vosk model: ${e.message}")
                     _state.value = SttState.Error("Failed to initialize Vosk model")
                 }
             } else {

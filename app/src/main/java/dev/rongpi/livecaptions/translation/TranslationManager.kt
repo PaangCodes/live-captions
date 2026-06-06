@@ -54,7 +54,7 @@ class TranslationManager(
                 val models = modelManager.getDownloadedModels(TranslateRemoteModel::class.java).await()
                 _downloadedLanguages.value = models.map { it.language }.toSet()
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to get downloaded models", e)
+                Log.e(TAG, "Failed to get downloaded models: ${e.message}")
             }
         }
     }
@@ -68,7 +68,7 @@ class TranslationManager(
                 modelManager.download(model, conditions).await()
                 refreshDownloadedLanguages()
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to download language model $language", e)
+                Log.e(TAG, "Failed to download language model $language: ${e.message}")
             } finally {
                 _downloadingLanguages.value = _downloadingLanguages.value - language
             }
@@ -91,7 +91,7 @@ class TranslationManager(
                     updateLanguages(sourceLanguage, targetLanguage)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete language model $language", e)
+                Log.e(TAG, "Failed to delete language model $language: ${e.message}")
             }
         }
     }
@@ -125,7 +125,7 @@ class TranslationManager(
 
                 _state.value = TranslationState.Ready
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during translation initialization", e)
+                Log.e(TAG, "Exception during translation initialization: ${e.message}")
                 _state.value = TranslationState.Error("Failed to initialize translation model")
             }
         }
@@ -165,7 +165,7 @@ class TranslationManager(
                             _translatedText.emit(translated)
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "Exception during translation", e)
+                        Log.e(TAG, "Exception during translation: ${e.message}")
                         // Handle or log translation error, don't crash stream
                     }
                 }

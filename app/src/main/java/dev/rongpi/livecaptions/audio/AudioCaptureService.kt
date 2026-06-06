@@ -135,9 +135,9 @@ class AudioCaptureService : Service() {
                 }
             }
         } catch (e: SecurityException) {
-            Log.e(TAG, "SecurityException: permission not granted to record audio", e)
+            Log.e(TAG, "SecurityException: permission not granted to record audio: ${e.message}")
         } catch (e: Exception) {
-            Log.e(TAG, "Exception starting audio capture", e)
+            Log.e(TAG, "Exception starting audio capture: ${e.message}")
         }
     }
 

@@ -59,14 +59,12 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
+        val tempZipFile = File(targetDir, "temp.zip")
+        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
             if (!targetDir.exists()) {
                 targetDir.mkdirs()
             }
-
-                if (!targetDir.exists()) {
-                    targetDir.mkdirs()
-                }
 
         var success = false
         try {
@@ -168,7 +166,8 @@ open class ModelDownloader {
                     zis.closeEntry()
                 }
                 success = true
-            } finally {
+            }
+        } finally {
                 // 3. Clean up the temp zip file
                 if (tempZipFile.exists()) {
                     tempZipFile.delete()
@@ -177,7 +176,6 @@ open class ModelDownloader {
                     targetDir.deleteRecursively()
                 }
             }
-        }
     }.flowOn(Dispatchers.IO)
 
     open fun downloadFile(context: Context, url: String, targetFileName: String): Flow<DownloadProgress> = flow {
@@ -192,16 +190,12 @@ open class ModelDownloader {
         }
 
         val request = Request.Builder().url(url).build()
+        val maxDownloadBytes = 1024L * 1024L * 1024L // 1 GB limit
 
             val parent = targetFile.parentFile
             if (parent != null && !parent.exists() && !parent.mkdirs()) {
                  throw Exception("Failed to create directory $parent")
             }
-
-                val parent = targetFile.parentFile
-                if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                     throw Exception("Failed to create directory $parent")
-                }
 
         var success = false
         try {
@@ -240,11 +234,11 @@ open class ModelDownloader {
                     }
                 }
                 success = true
-            } finally {
+            }
+        } finally {
                 if (!success && targetFile.exists()) {
                     targetFile.delete()
                 }
             }
-        }
     }.flowOn(Dispatchers.IO)
 }

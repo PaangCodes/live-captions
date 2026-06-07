@@ -90,3 +90,9 @@
 ## 2025-05-15 - Jetpack Compose State Isolation
 **Learning:** Extracting STT state updates to a child component isolates recompositions, significantly enhancing performance during rapid state updates and preventing the entire `SttConfigCard` from unnecessary re-rendering. This optimizes UI performance, particularly when STT engine emits progress.
 **Action:** Extract the status and progress reporting logic to a custom `@Composable` function inside parents that would otherwise suffer from rapid high-frequency re-rendering.
+## 2026-06-06 - Prevent StrictMode Violations with Testable Dispatchers
+ **Learning:** When resolving StrictMode violations by moving blocking file I/O (like ) off the main thread using , avoid hardcoding  directly inside the class. Hardcoding breaks coroutine test tracking in  because  cannot control the real IO thread pool, leading to hanging tests or .
+ **Action:** Inject the dispatcher via the constructor () and pass a  (like ) in unit tests.
+## 2024-05-18 - Prevent StrictMode Violations with Testable Dispatchers
+ **Learning:** When resolving StrictMode violations by moving blocking file I/O (like `File.exists()`) off the main thread using `withContext(Dispatchers.IO)`, avoid hardcoding `Dispatchers.IO` directly inside the class. Hardcoding breaks coroutine test tracking in `runTest` because `advanceUntilIdle()` cannot control the real IO thread pool, leading to hanging tests or `UncompletedCoroutinesError`.
+ **Action:** Inject the dispatcher via the constructor (`private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO`) and pass a `TestDispatcher` (like `StandardTestDispatcher`) in unit tests.

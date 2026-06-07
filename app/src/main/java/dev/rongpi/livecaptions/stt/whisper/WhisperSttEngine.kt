@@ -12,14 +12,17 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class WhisperSttEngine(
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main),
-    private val modelDownloader: ModelDownloader = ModelDownloader()
+    private val modelDownloader: ModelDownloader = ModelDownloader(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SttEngine {
     private val _state = MutableStateFlow<SttState>(SttState.Uninitialized)
     override val state: StateFlow<SttState> = _state.asStateFlow()
@@ -38,7 +41,8 @@ class WhisperSttEngine(
 
         initJob?.cancel()
         initJob = coroutineScope.launch {
-            if (!modelFile.exists()) {
+            val exists = withContext(ioDispatcher) { modelFile.exists() }
+            if (!exists) {
                 try {
                     modelDownloader.downloadFile(
                         context = config.context,

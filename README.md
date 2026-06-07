@@ -43,8 +43,9 @@ The core components of the application are now successfully integrated into a co
 1.  **Initialization:** `MainActivity` initializes the `VoskSttEngine`, the `TranslationManager` (using Google ML Kit), and the `OverlayManager`. Coroutine `Flow`s are mapped in `onCreate` to seamlessly pass partial recognition results to the translator, and translated text to the overlay.
 2.  **Permissions & Capture:** When the user taps "Start Live Captions", the app sequentially requests and validates `RECORD_AUDIO` and `SYSTEM_ALERT_WINDOW` permissions. Once granted, it launches the `MediaProjection` intent.
 3.  **STT Processing:** `AudioCaptureService` (a Foreground Service) intercepts internal device audio using `AudioPlaybackCapture` and feeds the byte array chunks directly into the injected `SttEngine`.
-4.  **Translation:** The `TranslationManager` collects the text from the `SttEngine`'s Flow and processes it locally using ML Kit models.
-5.  **Display:** The `OverlayManager` creates a custom `LifecycleOwner` and displays a Jetpack Compose floating window over other apps (`TYPE_APPLICATION_OVERLAY`) to show the translated captions in real-time.
+4.  **Translation:** The `TranslationManager` collects the text from the `SttEngine`'s Flow and processes it locally using ML Kit models, featuring an early-return JNI bypass for blank payloads to conserve CPU during speech pauses.
+5.  **Display & State Management:** The `OverlayManager` creates a custom `LifecycleOwner` and displays a Jetpack Compose floating window over other apps (`TYPE_APPLICATION_OVERLAY`). STT status updates and long-running item downloads use localized, isolated child Composable components with explicit visual loading states to prevent whole-screen recomposition.
+6.  **Performance & Network:** The pipeline uses zero-allocation audio buffers within the high-frequency capture loop and implements strict OkHttp closures in `ModelDownloader` to prevent connection leaks (DoS).
 
 ---
 

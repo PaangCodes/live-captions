@@ -37,10 +37,10 @@ class WhisperSttEngine(
 
     override fun initialize(config: SttConfig) {
         _state.value = SttState.Initializing
-        val modelFile = File(config.context.filesDir, "ggml-tiny.en.bin")
 
         initJob?.cancel()
         initJob = coroutineScope.launch {
+            val modelFile = withContext(ioDispatcher) { File(config.context.filesDir, "ggml-tiny.en.bin") }
             val exists = withContext(ioDispatcher) { modelFile.exists() }
             if (!exists) {
                 try {

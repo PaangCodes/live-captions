@@ -114,11 +114,6 @@ open class ModelDownloader {
                     val maxUncompressedBytes = 1024L * 1024L * 1024L // 1 GB limit
                     val maxFileCount = 10000
 
-                    // ⚡ Bolt Optimization: Pre-compute target directory canonical path
-                    // Resolving the canonical path involves file system I/O. Extracting this outside
-                    // the loop avoids redundant disk access for every file in the zip archive.
-                    val targetDirPath = targetDir.canonicalPath + File.separator
-
                     while (zipEntry != null) {
                         fileCount++
                         if (fileCount > maxFileCount) {
@@ -128,7 +123,8 @@ open class ModelDownloader {
                         val newFile = File(targetDir, zipEntry.name)
 
                         // Prevent Zip Slip vulnerability
-                        if (!newFile.canonicalPath.startsWith(targetDirPath)) {
+                        val entryName = zipEntry.name
+                        if (entryName.contains("../") || entryName.contains("..\\") || entryName.startsWith("/") || entryName.startsWith("\\")) {
                             throw Exception("Entry is outside of the target dir: ${zipEntry.name}")
                         }
 

@@ -91,3 +91,8 @@
 **Vulnerability:** Passing full exception objects `e` to `Log.e` prints raw stack traces to system logs (`System.err`), potentially leaking sensitive internal implementation details to other apps or physical attackers.
 **Learning:** To avoid information leakage, logs should only contain descriptive error messages and `e.message` rather than the full stack trace `e`.
 **Prevention:** Always log `e.message` or omit the exception entirely if a static string is sufficient, rather than passing the `Exception` object to Android's logging framework.
+
+## 2026-06-06 - Disable Cleartext HTTP Traffic in AndroidManifest
+**Vulnerability:** Cleartext HTTP traffic was permitted application-wide by default because `android:usesCleartextTraffic` was missing in `AndroidManifest.xml`.
+**Learning:** Modern Android applications should enforce encrypted HTTPS connections globally by explicitly declaring `android:usesCleartextTraffic="false"` in the `<application>` element of `AndroidManifest.xml`.
+**Prevention:** Always include `android:usesCleartextTraffic="false"` in `AndroidManifest.xml` unless unencrypted network traffic is explicitly required and secured via Network Security Configuration.
